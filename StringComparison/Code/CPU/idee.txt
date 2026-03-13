@@ -1,0 +1,14 @@
+/* Dubbi*/
+- i thread si devono prendere il blocc, non so davvero la dimensione del file
+- capire se file su disco o ram
+
+
+/* TO-DO */
+- informazioni sul chip
+
+
+/* idee */
+
+allora sicurmante una idea per il miglioramento
+è che poi con i thread dividiamo il testo in blocchi per ogni
+ thread per mgliorare la ricerca
