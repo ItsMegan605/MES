@@ -3,47 +3,69 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <vector>
+#include <thread>
+#include <atomic>
 
-#define FILE_PATH "reviews.csv"
+#define FILE_PATH "gigante.txt"
 
+//global variables
 using namespace std;
 namespace fs = filesystem;
+char* file_buffer;
+atomic_int occurrences(0);
+std::uintmax_t file_size;
+std::uintmax_t chunk_size;
+int num_threads;
 
-void findStringInstance(int thread_id,char* target_string, char* file, long file_size){
-    cout <<"File size: "<<file_size<<endl;
-    char * head = file;
+
+void findStringIstance(int thread_index, char* target_string, int remainder){
+    char* file_chunk_start = file_buffer + thread_index * chunk_size;
+
+    char * head = file_chunk_start;
     char * iterator = target_string;
-    char * tail = file;
-    long occurrence = 0;
+    unsigned long chunk_offset = thread_index * chunk_size;
     // garbage version
-    for(unsigned long i = 0; i < file_size; i++){
+    for(unsigned long i = 0; i < chunk_size + remainder; i++){
         unsigned long j;
-        for(j = 0; j < strlen(target_string); j++){
-            if(iterator[j] != tail[j+i]){
+
+        for(j = 0; j < strlen(target_string); j++){ //to change
+            if(iterator[j] != head[j+i] || (chunk_offset + i + strlen(target_string) >= file_size)){
                 break;
             }
         }
         if(j == strlen(target_string))
-            occurrence++;
+            occurrences++;
     }
-    cout << "Occorrenze: "<<occurrence<<endl;
+}
+
+void parallelStringSearch(char* inputString, int num_threads) {
+    vector<thread> threads;
+    for(int i = 0; i < num_threads-1; i++){
+        threads.emplace_back(findStringIstance, i, inputString, 0);
+    }
+    findStringIstance(num_threads-1, inputString, file_size%num_threads); //chiamata per testare la funzione, da togliere dopo
+    for(auto& t : threads){
+        t.join(); //attendiamo fine threads
+    }
+    cout << "Occurrences of \"" << inputString << "\": " << occurrences.load() << endl;
 
 }
+
+
 
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
+    if (argc < 4) {
         cout << "Insert at least one word as an argument." << endl;
-        return 1;
+        //return 1;
     }
-
-    //prendere la stringa da terminale 
-    char* inputString = argv[1]; //prende la prima parola passata come argomento
-
-
-
-    std::uintmax_t file_size;
+    
+    char* inputString = "albero";//argv[1]; //prende la prima parola passata come argomento
+    num_threads = 2;//stoi(argv[2]); //prende il numero di thread da terminale
+    char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
+    
 
     try {
         file_size = fs::file_size(FILE_PATH);
@@ -53,6 +75,7 @@ int main(int argc, char* argv[]) {
         cerr << "Impossibile leggere il file: " << e.what() << '\n';
     }
     
+    chunk_size = file_size / num_threads; //calcolo la dimensione del chunk da assegnare a ogni thread
     //operazioni per fare il compare
     std::ifstream file(FILE_PATH, std::ios::binary);
     
@@ -60,7 +83,7 @@ int main(int argc, char* argv[]) {
         cerr << "Errore: impossibile aprire il file per la lettura.\n";
         return 1;
     }
-    char* file_buffer = new char[file_size];
+    file_buffer = new char[file_size];
     
     // 3. Legge il file un blocco alla volta finché non finisce
     file.read(file_buffer, file_size);
@@ -70,7 +93,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     
-    findStringInstance(0, argv[1],file_buffer,file_size);
+
+    parallelStringSearch(inputString, num_threads); //messo 0 per non avere errore al momento
 
     //chiusura del file 
     delete[] file_buffer;
