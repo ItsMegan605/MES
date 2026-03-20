@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
     // Definizione della dimensione: 5 GB = 5 * 1024 * 1024 * 1024 byte
-    const long long TARGET_SIZE = 1LL  * 1024 * 1024; 
+    const long long TARGET_SIZE = 3000LL  * 1024 * 1024; 
     const string filename = "gigante.txt";
     
     // Dimensione del buffer: 1 MB (scrivere a blocchi grandi è molto più veloce)

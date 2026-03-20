@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     }
     
     target_string = "albero";//argv[1]; //prende la prima parola passata come argomento
-    num_threads = 2;//stoi(argv[2]); //prende il numero di thread da terminale
+    num_threads = 5;//stoi(argv[2]); //prende il numero di thread da terminale
     char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
     
 
