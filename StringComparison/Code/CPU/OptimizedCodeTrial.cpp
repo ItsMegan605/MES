@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <chrono>
 
 #define FILE_PATH "gigante.txt"
 
@@ -16,12 +17,37 @@ namespace fs = filesystem;
 char* file_buffer;
 char* target_string;
 
+int* lps;
+
 atomic_int occurrences(0);
 
 int num_threads;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
+
+void build_table(int len){
+    char * head, *tail;
+    head = tail = target_string;
+    int pos = 0;
+    lps[0]=0;
+    tail++;
+    cout << lps[0]<<" ";
+    for(int i = 1; i < len; i++){
+        if(*tail == *head){
+            pos++;
+            lps[i] = pos;
+            head++;
+        }else{
+            pos = 0;
+            lps[i]=0;
+            head = target_string;
+        }
+        tail++;
+        cout << lps[i]<<" ";
+    }
+    cout <<endl;
+}
 
 unsigned long checkString(char*head,char*iterator,unsigned long file_position){
     unsigned long j;
@@ -38,13 +64,36 @@ void findStringIstance(int thread_index, int remainder){
     char* file_chunk_start = file_buffer + thread_index * chunk_size;
 
     char * head = file_chunk_start;
-    char * iterator = target_string;
+    char * iterator = target_string; // da cambiare
     unsigned long chunk_offset = thread_index * chunk_size;
 
+    int target_string_length = strlen(target_string);
+
+    /*
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
-        if(checkString(&head[i],iterator,chunk_offset + i) == strlen(target_string))
-            occurrences++;
+    if(checkString(&head[i],iterator,chunk_offset + i) == strlen(target_string))
+    occurrences++;
+}
+*/
+    unsigned long i = 0, j = 0;
+    
+    while(i < chunk_size + remainder){
+        
+        if(target_string[j] == head[i]){
+            j++;
+            i++;
+            
+            if(j == target_string_length){
+                occurrences++;
+                j = lps[j-1];
+            }
+        }else{
+            if(j != 0)
+                j = lps[j - 1];
+            else
+                i++;
+        }
     }
 }
 
@@ -69,13 +118,14 @@ void parallelStringSearch(int num_threads) {
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
+    /*
     if (argc < 4) {
         cout << "Insert at least one word as an argument." << endl;
-        //return 1;
+        return 1;
     }
-    
+    */
     target_string = "albero";//argv[1]; //prende la prima parola passata come argomento
-    num_threads = 5;//stoi(argv[2]); //prende il numero di thread da terminale
+    num_threads = 16;//stoi(argv[2]); //prende il numero di thread da terminale
     char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
     
 
@@ -105,8 +155,17 @@ int main(int argc, char* argv[]) {
         delete[] file_buffer;
         return 0;
     }
-    
+
+    int target_string_len = strlen(target_string); 
+    lps = new int[strlen(target_string)];
+    build_table(target_string_len);
+
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
     parallelStringSearch(num_threads);
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+
+    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+    cout<< "Durata: "<< duration.count() <<endl;
 
     //chiusura del file 
     delete[] file_buffer;

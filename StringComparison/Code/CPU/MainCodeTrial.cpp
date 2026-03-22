@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <chrono>
 
 #define FILE_PATH "gigante.txt"
 
@@ -26,7 +27,7 @@ std::uintmax_t chunk_size;
 unsigned long checkString(char*head,char*iterator,unsigned long file_position){
     unsigned long j;
     for(j = 0; j < strlen(target_string); j++){
-        if(iterator[j] != head[j] || (file_position + strlen(target_string) >= file_size)){
+        if(iterator[j] != head[j] || (file_position + strlen(target_string) > file_size)){
             break;
         }
     }
@@ -38,7 +39,7 @@ void findStringIstance(int thread_index, int remainder){
     char* file_chunk_start = file_buffer + thread_index * chunk_size;
 
     char * head = file_chunk_start;
-    char * iterator = target_string;
+    char * iterator = target_string; // da cambiare
     unsigned long chunk_offset = thread_index * chunk_size;
 
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
@@ -69,13 +70,14 @@ void parallelStringSearch(int num_threads) {
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
+    /*
     if (argc < 4) {
         cout << "Insert at least one word as an argument." << endl;
-        //return 1;
+        return 1;
     }
-    
+    */
     target_string = "albero";//argv[1]; //prende la prima parola passata come argomento
-    num_threads = 2;//stoi(argv[2]); //prende il numero di thread da terminale
+    num_threads = 16;//stoi(argv[2]); //prende il numero di thread da terminale
     char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
     
 
@@ -105,8 +107,12 @@ int main(int argc, char* argv[]) {
         delete[] file_buffer;
         return 0;
     }
-    
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
     parallelStringSearch(num_threads);
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+
+    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+    cout<< "Durata: "<< duration.count() <<endl;
 
     //chiusura del file 
     delete[] file_buffer;
