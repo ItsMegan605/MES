@@ -32,7 +32,6 @@ void build_table(int len){
     int pos = 0;
     lps[0]=0;
     tail++;
-    cout << lps[0]<<" ";
     for(int i = 1; i < len; i++){
         if(*tail == *head){
             pos++;
@@ -44,9 +43,9 @@ void build_table(int len){
             head = target_string;
         }
         tail++;
-        cout << lps[i]<<" ";
+       // cout << lps[i]<<" ";
     }
-    cout <<endl;
+   // cout <<endl;
 }
 
 unsigned long checkString(char*head,char*iterator,unsigned long file_position){
@@ -109,7 +108,7 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //attendiamo fine threads
     }
-    cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
+   // cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
 
 }
 
@@ -124,9 +123,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     */
-    target_string = "albero";//argv[1]; //prende la prima parola passata come argomento
-    num_threads = 16;//stoi(argv[2]); //prende il numero di thread da terminale
-    char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
+    target_string = argv[1]; //prende la prima parola passata come argomento
+    num_threads = stoi(argv[2]); //prende il numero di thread da terminale
+    //char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
     
 
     try {
@@ -165,7 +164,7 @@ int main(int argc, char* argv[]) {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout<< "Durata: "<< duration.count() <<endl;
+    cout<< duration.count() <<endl;
 
     //chiusura del file 
     delete[] file_buffer;

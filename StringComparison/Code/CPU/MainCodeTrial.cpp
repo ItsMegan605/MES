@@ -5,8 +5,8 @@
 #include <fstream>
 #include <vector>
 #include <thread>
-#include <atomic>
 #include <chrono>
+#include <mutex>
 
 #define FILE_PATH "gigante.txt"
 
@@ -17,9 +17,10 @@ namespace fs = filesystem;
 char* file_buffer;
 char* target_string;
 
-atomic_int occurrences(0);
+int occurrences(0);
 
 int num_threads;
+mutex mtx;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
@@ -44,8 +45,12 @@ void findStringIstance(int thread_index, int remainder){
 
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
-        if(checkString(&head[i],iterator,chunk_offset + i) == strlen(target_string))
+        if(checkString(&head[i],iterator,chunk_offset + i) == strlen(target_string)){
+            mtx.lock();
             occurrences++;
+            mtx.unlock();
+        }
+
     }
 }
 
@@ -61,7 +66,7 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //attendiamo fine threads
     }
-    cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
+   // cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
 
 }
 
@@ -70,15 +75,15 @@ void parallelStringSearch(int num_threads) {
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
-    /*
-    if (argc < 4) {
+    
+    if (argc < 3) {
         cout << "Insert at least one word as an argument." << endl;
         return 1;
     }
-    */
-    target_string = "albero";//argv[1]; //prende la prima parola passata come argomento
-    num_threads = 16;//stoi(argv[2]); //prende il numero di thread da terminale
-    char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
+    
+    target_string = argv[1]; //prende la prima parola passata come argomento
+    num_threads = stoi(argv[2]); //prende il numero di thread da terminale
+    //char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
     
 
     try {
@@ -112,7 +117,7 @@ int main(int argc, char* argv[]) {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout<< "Durata: "<< duration.count() <<endl;
+    cout << duration.count() <<endl;
 
     //chiusura del file 
     delete[] file_buffer;
