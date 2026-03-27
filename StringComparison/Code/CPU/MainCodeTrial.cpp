@@ -13,18 +13,19 @@
 //global variables
 using namespace std;
 namespace fs = filesystem;
-
+//pointers to save the text and the string to compare
 char* file_buffer;
 char* target_string;
 
 int occurrences(0);
-
 int num_threads;
 mutex mtx;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
 
+//function to chech if the chars match the target word
+//returns the number of chars that match, if it is equal to the length of the target string then we have found an occurrence
 unsigned long checkString(char*head,char*iterator,unsigned long file_position){
     unsigned long j;
     for(j = 0; j < strlen(target_string); j++){
@@ -35,12 +36,12 @@ unsigned long checkString(char*head,char*iterator,unsigned long file_position){
     return j;
 }
 
-
+//functon executed by every thread, analyzes a chunk of the file and counts the occurrences 
 void findStringIstance(int thread_index, int remainder){
     char* file_chunk_start = file_buffer + thread_index * chunk_size;
 
     char * head = file_chunk_start;
-    char * iterator = target_string; // da cambiare
+    char * iterator = target_string; 
     unsigned long chunk_offset = thread_index * chunk_size;
 
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
@@ -54,6 +55,7 @@ void findStringIstance(int thread_index, int remainder){
     }
 }
 
+//creation and thread waiting
 void parallelStringSearch(int num_threads) {
 
     vector<thread> threads;
@@ -61,10 +63,9 @@ void parallelStringSearch(int num_threads) {
     for(int i = 0; i < num_threads-1; i++){
         threads.emplace_back(findStringIstance, i, 0);
     }
-    findStringIstance(num_threads-1, file_size%num_threads); // il main thread e' l'ultimo
-
+    findStringIstance(num_threads-1, file_size%num_threads); //main thread is the last one
     for(auto& t : threads){
-        t.join(); //attendiamo fine threads
+        t.join(); //wait for threads to finish
     }
    // cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
 
@@ -81,9 +82,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    target_string = argv[1]; //prende la prima parola passata come argomento
-    num_threads = stoi(argv[2]); //prende il numero di thread da terminale
-    //char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
+    target_string = argv[1]; //word to compare, taken from terminal
+    num_threads = stoi(argv[2]); //number of threads, taken from terminal
+    //char* mode = "a"; //argv[3]; //mode of the search, taken from terminal, not implemented yet
     
 
     try {
@@ -95,8 +96,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    chunk_size = file_size / num_threads; //calcolo la dimensione del chunk da assegnare a ogni thread
-    //operazioni per fare il compare
+    chunk_size = file_size / num_threads; //dimension of the chunck for each threas
     std::ifstream file(FILE_PATH, std::ios::binary);
     
     if (!file) {
@@ -108,10 +108,11 @@ int main(int argc, char* argv[]) {
     // 3. Legge il file un blocco alla volta finché non finisce
     file.read(file_buffer, file_size);
     if(file.gcount() <= 0) {
-        cout <<"Error in file.read()"<<endl;
+        cout <<"Error in file.read(): file.gcount() = "<<file.gcount()<<endl;
         delete[] file_buffer;
         return 0;
     }
+    //timing the search
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     parallelStringSearch(num_threads);
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
@@ -119,7 +120,7 @@ int main(int argc, char* argv[]) {
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
     cout << duration.count() <<endl;
 
-    //chiusura del file 
+    //close the file 
     delete[] file_buffer;
     return 0;
     

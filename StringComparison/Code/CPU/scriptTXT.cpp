@@ -8,11 +8,11 @@ using namespace std;
 
 int main() {
     // Definizione della dimensione: 5 GB = 5 * 1024 * 1024 * 1024 byte
-    const long long TARGET_SIZE = 2000LL  * 1024 * 1024; 
+    const long long TARGET_SIZE = 4000LL  * 1024 * 1024; 
     const string filename = "gigante.txt";
     
-    // Dimensione del buffer: 1 MB (scrivere a blocchi grandi è molto più veloce)
-    const int BUFFER_SIZE = 1024 * 1024; 
+    // Dimensione del buffer: 500 MB (scrivere a blocchi grandi è molto più veloce)
+    const int BUFFER_SIZE = 500* 1024 * 1024; 
 
     // Un dizionario di base con "parole sensate". Puoi aggiungerne quante ne vuoi.
     vector<string> words = {
@@ -45,7 +45,7 @@ int main() {
     // Riserviamo in anticipo la memoria per il buffer per evitare riallocazioni lente
     buffer.reserve(BUFFER_SIZE + 100); 
 
-    cout << "Inizio la generazione del file da 5GB. Potrebbe volerci qualche minuto..." << endl;
+    cout << "Inizio la generazione del file da "<< TARGET_SIZE/(1024 * 1024) << "MB. Potrebbe volerci qualche minuto..." << endl;
 
     while (bytesWritten < TARGET_SIZE) {
         buffer.clear();
