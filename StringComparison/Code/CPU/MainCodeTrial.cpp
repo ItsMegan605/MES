@@ -21,6 +21,8 @@ int occurrences(0);
 int num_threads;
 mutex mtx;
 
+const std::uintmax_t max_read_size = 2000LL* 1024*1024;
+
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
 
@@ -106,11 +108,17 @@ int main(int argc, char* argv[]) {
     file_buffer = new char[file_size];
     
     // 3. Legge il file un blocco alla volta finché non finisce
-    file.read(file_buffer, file_size);
-    if(file.gcount() <= 0) {
-        cout <<"Error in file.read(): file.gcount() = "<<file.gcount()<<endl;
-        delete[] file_buffer;
-        return 0;
+    std::uintmax_t bytes_read = 0;
+    while(bytes_read < file_size){
+        std::uintmax_t bytes_to_read = (file_size - bytes_read > max_read_size) ? max_read_size : file_size - bytes_read;
+
+        file.read(file_buffer, bytes_to_read);
+        if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
+            cout <<"Error in file.read(): file.gcount() = "<<file.gcount()<<endl;
+            delete[] file_buffer;
+            return 0;
+        }
+        bytes_read += bytes_to_read;
     }
     //timing the search
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
