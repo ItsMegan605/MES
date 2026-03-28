@@ -7,6 +7,7 @@
 #include <functional>
 #include <chrono>
 #include <windows.h>
+#include <pthread.h>
 
 #define CHUNK_SIZE 2
 
@@ -17,7 +18,7 @@ mutex out;
 
 uintmax_t next_chunk_start = 0;
 
-const uintmax_t file_size = 2000 * CHUNK_SIZE;
+const uintmax_t file_size = 100 * CHUNK_SIZE;
 
 size_t num_threads = 8;
 
@@ -66,7 +67,7 @@ public:
                     
                 //}
             });
-            DWORD_PTR dw = SetThreadAffinityMask(workers.back().native_handle(), DWORD_PTR(1) << i + 1); // i + 1 e non i perche almeno lascio il primo core al main 
+            DWORD_PTR dw = SetThreadAffinityMask(pthread_gethandle(workers.back().native_handle()), DWORD_PTR(1) << i ); 
             if (dw == 0) {
                 DWORD dwErr = GetLastError();
                 cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
@@ -127,8 +128,9 @@ uintmax_t getNextChunkStart(){
 
 void work(int index){
     unique_lock<mutex> output(out);
-    cout<<"ciao, sono id: " <<index <<endl;
+    cout << "ciao, sono id: " << index << " e sto girando sul CORE: " << GetCurrentProcessorNumber() << endl;
     output.unlock();
+
     int quanti = 0;
     while(true){
         uintmax_t my_piece = getNextChunkStart();
@@ -145,7 +147,7 @@ void work(int index){
         cout<<index<<") ho preso il pezzo " << my_piece << ", inizio operazioni..."<<endl;
         output.unlock();
 
-        for(volatile int i = 0; i < 10000000; i++);
+        for(volatile int i = 0; i < 1000000000; i+= index +1);
     }
 }
 
@@ -158,7 +160,7 @@ void culo(ThreadPool &pool){
 int main(){
     
     // Set the affinity mask for the Main Thread
-    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1));
+    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << num_threads - 1);
     if (dw == 0) {
         DWORD dwErr = GetLastError();
         cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
