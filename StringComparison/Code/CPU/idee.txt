@@ -11,4 +11,4 @@
 
 allora sicurmante una idea per il miglioramento
 è che poi con i thread dividiamo il testo in blocchi per ogni
- thread per mgliorare la ricerca
+thread per mgliorare la ricerca

@@ -15,13 +15,18 @@ using namespace std;
 namespace fs = filesystem;
 
 char* file_buffer;
+char* end_of_file;
+
 char* target_string;
 
-int* lps;
+int* longest_prefix_suffix_array;
 
 atomic_int occurrences(0);
 
 int num_threads;
+
+//windows uses 32 bit values for file reading
+const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
@@ -30,68 +35,50 @@ void build_table(int len){
     char * head, *tail;
     head = tail = target_string;
     int pos = 0;
-    lps[0]=0;
+    longest_prefix_suffix_array[0]=0;
     tail++;
     for(int i = 1; i < len; i++){
         if(*tail == *head){
             pos++;
-            lps[i] = pos;
+            longest_prefix_suffix_array[i] = pos;
             head++;
         }else{
             pos = 0;
-            lps[i]=0;
+            longest_prefix_suffix_array[i]=0;
             head = target_string;
         }
         tail++;
-       // cout << lps[i]<<" ";
+       // cout << longest_prefix_suffix_array[i]<<" ";
     }
    // cout <<endl;
 }
 
-unsigned long checkString(char*head,char*iterator,unsigned long file_position){
-    unsigned long j;
-    for(j = 0; j < strlen(target_string); j++){
-        if(iterator[j] != head[j] || (file_position + strlen(target_string) >= file_size)){
-            break;
-        }
-    }
-    return j;
-}
-
 
 void findStringIstance(int thread_index, int remainder){
-    char* file_chunk_start = file_buffer + thread_index * chunk_size;
 
-    char * head = file_chunk_start;
-    char * iterator = target_string; // da cambiare
-    unsigned long chunk_offset = thread_index * chunk_size;
+    char* chunk_start = file_buffer + thread_index * chunk_size;
+
+    //unsigned long file_position = thread_index * chunk_size;
 
     int target_string_length = strlen(target_string);
 
-    /*
-    for(unsigned long i = 0; i < chunk_size + remainder; i++){
+    unsigned long target_index = 0, candidate_index = 0;
+
+    while(candidate_index < chunk_size + remainder){
         
-    if(checkString(&head[i],iterator,chunk_offset + i) == strlen(target_string))
-    occurrences++;
-}
-*/
-    unsigned long i = 0, j = 0;
-    
-    while(i < chunk_size + remainder){
-        
-        if(target_string[j] == head[i]){
-            j++;
-            i++;
+        if(target_string[target_index] == chunk_start[candidate_index]){
+            target_index++;
+            candidate_index++;
             
-            if(j == target_string_length){
+            if(target_index == target_string_length){
                 occurrences++;
-                j = lps[j-1];
+                target_index = longest_prefix_suffix_array[target_index - 1];
             }
         }else{
-            if(j != 0)
-                j = lps[j - 1];
+            if(target_index != 0)
+                target_index = longest_prefix_suffix_array[target_index - 1];
             else
-                i++;
+                candidate_index++;
         }
     }
 }
@@ -108,7 +95,7 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //attendiamo fine threads
     }
-   // cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
+    cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
 
 }
 
@@ -117,16 +104,14 @@ void parallelStringSearch(int num_threads) {
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
-    /*
-    if (argc < 4) {
-        cout << "Insert at least one word as an argument." << endl;
+
+    if (argc < 3) {
+        cout << "Insert the target string and the number of threads as arguments." << endl;
         return 1;
     }
-    */
+
     target_string = argv[1]; //prende la prima parola passata come argomento
-    num_threads = stoi(argv[2]); //prende il numero di thread da terminale
-    //char* mode = "a"; //argv[3]; //prende il percorso del file da terminale
-    
+    num_threads = stoi(argv[2]); //prende il numero di thread da terminale    
 
     try {
         file_size = fs::file_size(FILE_PATH);
@@ -146,17 +131,24 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     file_buffer = new char[file_size];
-    
+    end_of_file = file_buffer + file_size + 1; // the first address that is not part of the file buffer
+
     // 3. Legge il file un blocco alla volta finché non finisce
-    file.read(file_buffer, file_size);
-    if(file.gcount() <= 0) {
-        cout <<"Error in file.read()"<<endl;
-        delete[] file_buffer;
-        return 0;
+    std::uintmax_t bytes_left = file_size;
+    while(bytes_left){
+        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
+
+        file.read(file_buffer, bytes_to_read);
+        if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
+            cout <<"Error in file.read()"<< endl;
+            delete[] file_buffer;
+            return 0;
+        }
+        bytes_left -= bytes_to_read;
     }
 
     int target_string_len = strlen(target_string); 
-    lps = new int[strlen(target_string)];
+    longest_prefix_suffix_array = new int[strlen(target_string)];
     build_table(target_string_len);
 
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
@@ -167,6 +159,7 @@ int main(int argc, char* argv[]) {
     cout<< duration.count() <<endl;
 
     //chiusura del file 
+    delete[] longest_prefix_suffix_array;
     delete[] file_buffer;
     return 0;
     

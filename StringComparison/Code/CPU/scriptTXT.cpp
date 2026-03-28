@@ -66,7 +66,7 @@ int main() {
 
         // Stampa un aggiornamento ogni 500 MB scritti per far capire all'utente che il programma sta lavorando
         if (bytesWritten % (500LL * 1024 * 1024) < buffer.size()) {
-            cout << "Progresso: " << bytesWritten / (1024 * 1024) << " MB scritti su 5120 MB..." << endl;
+            cout << "Progresso: " << bytesWritten / (1024 * 1024) << " MB scritti su " << TARGET_SIZE / (1024 * 1024) << " MB..." << endl;
         }
     }
 
