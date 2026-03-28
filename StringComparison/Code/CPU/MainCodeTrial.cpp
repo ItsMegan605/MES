@@ -22,6 +22,7 @@ char* target_string;
 int occurrences = 0;
 int num_threads;
 mutex mtx;
+mutex culetto; 
 
 const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
@@ -44,6 +45,7 @@ unsigned long checkString(char* candidate_match, char* target){
 void findStringIstance(int thread_index, int remainder){
 
     unsigned long file_position = thread_index * chunk_size;
+    int temp = 0;
 
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
@@ -51,9 +53,15 @@ void findStringIstance(int thread_index, int remainder){
             mtx.lock();
             occurrences++;
             mtx.unlock();
+            temp++;
         }
         file_position++;
+        
+
     }
+    culetto.lock();
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    culetto.unlock();
 }
 
 //creation and thread waiting
@@ -68,7 +76,7 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //wait for threads to finish
     }
-   // cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
+   //cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
 
 }
 
@@ -103,15 +111,17 @@ int main(int argc, char* argv[]) {
     
     // 3. Legge il file un blocco alla volta finché non finisce
     std::uintmax_t bytes_left = file_size;
+    char* buffer_offset = file_buffer;
     while(bytes_left){
         std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
 
-        file.read(file_buffer, bytes_to_read);
+        file.read(buffer_offset, bytes_to_read);
         if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
             cout <<"Error in file.read()"<< endl;
             delete[] file_buffer;
             return 0;
         }
+        buffer_offset += bytes_to_read;
         bytes_left -= bytes_to_read;
     }
 
@@ -121,7 +131,7 @@ int main(int argc, char* argv[]) {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout << duration.count() <<endl;
+    //cout << duration.count() <<endl;
 
     //close the file 
     delete[] file_buffer;

@@ -7,6 +7,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <mutex>
 
 #define FILE_PATH "gigante.txt"
 
@@ -53,6 +54,7 @@ void build_table(int len){
    // cout <<endl;
 }
 
+mutex culetto; 
 
 void findStringIstance(int thread_index, int remainder){
 
@@ -63,6 +65,7 @@ void findStringIstance(int thread_index, int remainder){
     int target_string_length = strlen(target_string);
 
     unsigned long target_index = 0, candidate_index = 0;
+    int temp = 0;
 
     while(candidate_index < chunk_size + remainder){
         
@@ -72,6 +75,7 @@ void findStringIstance(int thread_index, int remainder){
             
             if(target_index == target_string_length){
                 occurrences++;
+                temp++;
                 target_index = longest_prefix_suffix_array[target_index - 1];
             }
         }else{
@@ -81,6 +85,9 @@ void findStringIstance(int thread_index, int remainder){
                 candidate_index++;
         }
     }
+    culetto.lock();
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    culetto.unlock();
 }
 
 void parallelStringSearch(int num_threads) {
@@ -135,15 +142,17 @@ int main(int argc, char* argv[]) {
 
     // 3. Legge il file un blocco alla volta finché non finisce
     std::uintmax_t bytes_left = file_size;
+    char* buffer_offset = file_buffer;
     while(bytes_left){
         std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
 
-        file.read(file_buffer, bytes_to_read);
+        file.read(buffer_offset, bytes_to_read);
         if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
             cout <<"Error in file.read()"<< endl;
             delete[] file_buffer;
             return 0;
         }
+        buffer_offset += bytes_to_read;
         bytes_left -= bytes_to_read;
     }
 
