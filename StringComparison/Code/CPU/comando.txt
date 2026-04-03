@@ -1,0 +1,1 @@
+g++ OptimizedCodeTrial.cpp -o Optimized -I"C:\Program Files (x86)\Intel\oneAPI\vtune\latest\include" -L"C:\Program Files (x86)\Intel\oneAPI\vtune\latest\lib64" -littnotify

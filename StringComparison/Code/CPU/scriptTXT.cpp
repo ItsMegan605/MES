@@ -14,7 +14,7 @@ int main() {
     // Dimensione del buffer: 500 MB (scrivere a blocchi grandi è molto più veloce)
     const int BUFFER_SIZE = 500* 1024 * 1024; 
 
-    // Un dizionario di base con "parole sensate". Puoi aggiungerne quante ne vuoi.
+// Un dizionario di base con "parole sensate". Puoi aggiungerne quante ne vuoi.
     vector<string> words = {
         "il", "di", "e", "a", "un", "in", "che", "non", "si", "da", "lo", "per", 
         "con", "sono", "come", "ma", "questo", "io", "se", "ha", "le", "su", 

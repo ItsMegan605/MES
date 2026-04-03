@@ -8,6 +8,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <ittnotify.h>
 
 #define FILE_PATH "gigante.txt"
 
@@ -86,7 +87,7 @@ void findStringIstance(int thread_index, int remainder){
         }
     }
     culetto.lock();
-    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    //cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
     culetto.unlock();
 }
 
@@ -94,6 +95,7 @@ void parallelStringSearch(int num_threads) {
 
     vector<thread> threads;
 
+    __itt_resume();
     for(int i = 0; i < num_threads-1; i++){
         threads.emplace_back(findStringIstance, i, 0);
     }
@@ -102,8 +104,8 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //attendiamo fine threads
     }
-    cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
-
+    //cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
+    __itt_pause();
 }
 
 
@@ -111,6 +113,8 @@ void parallelStringSearch(int num_threads) {
 //intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
+    __itt_pause();
+
 
     if (argc < 3) {
         cout << "Insert the target string and the number of threads as arguments." << endl;
@@ -165,7 +169,9 @@ int main(int argc, char* argv[]) {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout<< duration.count() <<endl;
+    //cout<< duration.count() <<endl;
+    cout << ((double)file_size / duration.count())* 1000 << endl;
+
 
     //chiusura del file 
     delete[] longest_prefix_suffix_array;

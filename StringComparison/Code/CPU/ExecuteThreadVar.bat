@@ -47,12 +47,12 @@ for /L %%T in (%MIN_THREADS%, 1, %MAX_THREADS%) do (
         
         :: Esecuzione pulita: essendo nella stessa cartella, basta chiamare il nome del file
         for /f "delims=" %%R in ('!ESEGUIBILE_NOME! %TARGET_STRING% %%T') do (
-            set TEMPO_MS=%%R
+            set THROUGHPUT=%%R
         )
-        echo Iterazione %%I: Tempo = !TEMPO_MS! ms
+        echo Iterazione %%I: Throughput = !THROUGHPUT! ms
         
         :: MODIFICA 2: Sostituite le virgole con il punto e virgola (;)
-        echo %%T;%%I;!TEMPO_MS! >> "%OUTPUT_CSV%"
+        echo %%T;%%I;!THROUGHPUT! >> "%OUTPUT_CSV%"
     )
 )
 
