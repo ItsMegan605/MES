@@ -23,7 +23,7 @@ char* target_string;
 int occurrences = 0;
 int num_threads;
 mutex mtx;
-mutex culetto; 
+//mutex output_mtx; 
 
 const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
@@ -60,9 +60,11 @@ void findStringIstance(int thread_index, int remainder){
         
 
     }
-    culetto.lock();
-    //cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
-    culetto.unlock();
+    /*
+    output_mtx.lock();
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    output_mtx.unlock();
+    */
 }
 
 //creation and thread waiting

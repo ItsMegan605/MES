@@ -55,7 +55,7 @@ void build_table(int len){
    // cout <<endl;
 }
 
-mutex culetto; 
+//mutex output_mtx; 
 
 void findStringIstance(int thread_index, int remainder){
 
@@ -86,9 +86,11 @@ void findStringIstance(int thread_index, int remainder){
                 candidate_index++;
         }
     }
-    culetto.lock();
-    //cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
-    culetto.unlock();
+    /*
+    output_mtx.lock();
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    output_mtx.unlock();
+    */
 }
 
 void parallelStringSearch(int num_threads) {
