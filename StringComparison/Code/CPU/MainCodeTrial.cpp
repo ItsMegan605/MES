@@ -7,7 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
-#include <ittnotify.h>
+#include <windows.h>
 
 #define FILE_PATH "gigante.txt"
 
@@ -23,7 +23,7 @@ char* target_string;
 int occurrences = 0;
 int num_threads;
 mutex mtx;
-//mutex output_mtx; 
+mutex output_mtx; 
 
 const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
@@ -34,8 +34,8 @@ std::uintmax_t chunk_size;
 //returns the number of chars that match, if it is equal to the length of the target string then we have found an occurrence
 unsigned long checkString(char* candidate_match, char* target){
     unsigned long j;
-    for(j = 0; j < strlen(target_string); j++){
-        if(candidate_match[j] != target[j] || (candidate_match + strlen(target_string) >= end_of_file)){
+    for(j = 0; j < strlen(target); j++){
+        if(candidate_match[j] != target[j] || (candidate_match + strlen(target) >= end_of_file)){
             break;
         }
     }
@@ -44,27 +44,42 @@ unsigned long checkString(char* candidate_match, char* target){
 
 //functon executed by every thread, analyzes a chunk of the file and counts the occurrences 
 void findStringIstance(int thread_index, int remainder){
+    /*
+    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << thread_index);
+    if (dw == 0) {
+        DWORD dwErr = GetLastError();
+        cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
+    }
+    */
+    
+    
+    //char target_string[10] = {"-----"}; // solo uno cerca!!
+    //if(thread_index == 4)
+    //    strcpy(target_string,"albero");
 
     unsigned long file_position = thread_index * chunk_size;
-    int temp = 0;
+    //int temp = 0;
 
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
         if(checkString(&file_buffer[file_position], target_string) == strlen(target_string)){
             mtx.lock();
             occurrences++;
             mtx.unlock();
-            temp++;
+            //temp++;
         }
         file_position++;
-        
 
     }
-    /*
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+
     output_mtx.lock();
-    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    //cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    cout << "Thread " << thread_index << " finished in: " << duration.count() << endl;
     output_mtx.unlock();
-    */
+    
 }
 
 //creation and thread waiting
@@ -72,7 +87,7 @@ void parallelStringSearch(int num_threads) {
 
     vector<thread> threads;
 
-    __itt_resume();
+    //__itt_resume();
 
     for(int i = 0; i < num_threads-1; i++){
         threads.emplace_back(findStringIstance, i, 0);
@@ -82,12 +97,12 @@ void parallelStringSearch(int num_threads) {
         t.join(); //wait for threads to finish
     }
    //cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
-   __itt_pause();
+   //__itt_pause();
 
 }
 
 int main(int argc, char* argv[]) {
-    __itt_pause();
+    //__itt_pause();
     
     if (argc < 3) {
         cout << "Insert the target string and the number of threads as arguments." << endl;
@@ -97,6 +112,14 @@ int main(int argc, char* argv[]) {
     target_string = argv[1]; //word to compare, taken from terminal
     num_threads = stoi(argv[2]); //number of threads, taken from terminal
     
+    /*
+    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << num_threads-1);
+    if (dw == 0) {
+        DWORD dwErr = GetLastError();
+        cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
+    }
+    */
+
     try {
         file_size = fs::file_size(FILE_PATH);
 
@@ -138,10 +161,9 @@ int main(int argc, char* argv[]) {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    //cout << duration.count() <<';';
+    //cout << duration.count() <<endl;
 
     cout << ((double)file_size / duration.count())* 1000 << endl;
-
 
     //close the file 
     delete[] file_buffer;

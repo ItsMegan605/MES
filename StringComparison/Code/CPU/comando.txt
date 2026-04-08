@@ -1,1 +1,9 @@
 g++ OptimizedCodeTrial.cpp -o Optimized -I"C:\Program Files (x86)\Intel\oneAPI\vtune\latest\include" -L"C:\Program Files (x86)\Intel\oneAPI\vtune\latest\lib64" -littnotify
+
+"C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
+
+# UN UNICO AMMASSO
+vtune -report timeline -r . -report-knob column-by=CPUTime -report-knob bin-count=1000 -report-output timeline.csv -format csv -csv-delimiter comma 
+
+# UNO PER THREAD
+vtune -report timeline -r . -report-knob column-by=CPUTime -report-knob bin-count=1000 -group-by thread -format csv -csv-delimiter comma > timeline_threads.csv
