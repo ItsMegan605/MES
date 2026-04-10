@@ -7,7 +7,7 @@ cd /d "%~dp0"
 set TARGET_STRING=albero
 set MIN_THREADS=1
 set MAX_THREADS=16
-set ITERAZIONI=10
+set ITERAZIONI=5
 
 :: =====================================================================
 

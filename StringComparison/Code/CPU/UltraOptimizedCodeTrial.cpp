@@ -8,8 +8,9 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <windows.h>
 
-#define FILE_PATH "test.txt"
+#define FILE_PATH "gigante.txt"
 
 //global variables
 using namespace std;
@@ -31,6 +32,10 @@ const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
+
+const std::uintmax_t PIECE_SIZE = 15*1024*1024;
+mutex chunk_mtx;
+std::uintmax_t next_piece_start = 0; 
 
 void build_table(int len){
     char * head, *tail;
@@ -54,38 +59,63 @@ void build_table(int len){
    // cout <<endl;
 }
 
-//mutex output_mtx; 
+mutex output_mtx; 
 
-void findStringIstance(int thread_index, int remainder){
 
-    char* chunk_start = file_buffer + thread_index * chunk_size;
+uintmax_t getNewPiece(){
+    lock_guard<mutex> lk(chunk_mtx);
+    uintmax_t current_start = next_piece_start;
+    next_piece_start += PIECE_SIZE;
+    return current_start;
+}
 
-    //unsigned long file_position = thread_index * chunk_size;
+void findStringIstance(int thread_index){
+
+    //char* chunk_start = file_buffer + thread_index * chunk_size;
+    uintmax_t current_piece_start = getNewPiece();
+    long long bytes_left = (file_size - current_piece_start < PIECE_SIZE) ? file_size - current_piece_start : PIECE_SIZE;
 
     int target_string_length = strlen(target_string);
 
-    unsigned long target_index = 0, candidate_index = 0;
+    unsigned long target_index = 0, candidate_index = current_piece_start;
     int temp = 0;
+    
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
 
-    while(candidate_index < chunk_size + remainder){
-        
-        if(target_string[target_index] == chunk_start[candidate_index]){
-            target_index++;
-            candidate_index++;
-            
-            if(target_index == target_string_length){
-                occurrences++;
-                temp++;
-                target_index = longest_prefix_suffix_array[target_index - 1];
-            }
-        }else{
-            if(target_index != 0)
-                target_index = longest_prefix_suffix_array[target_index - 1];
-            else
+    while(current_piece_start < file_size){
+        while(bytes_left > 0 || (target_index != 0 && candidate_index < file_size)){
+            if(target_string[target_index] == file_buffer[candidate_index]){
+                target_index++;
                 candidate_index++;
+                bytes_left--;
+
+                if(target_index == target_string_length){
+                    temp++;
+                    target_index = longest_prefix_suffix_array[target_index - 1];
+                }
+            }else{
+                if(target_index != 0)
+                    target_index = longest_prefix_suffix_array[target_index - 1];
+                else{
+                    candidate_index++;
+                    bytes_left--;
+                }
+            }
         }
+        current_piece_start = getNewPiece();
+        target_index = 0;
+        candidate_index = current_piece_start;
+        bytes_left = (file_size - current_piece_start < PIECE_SIZE) ? file_size - current_piece_start : PIECE_SIZE;
+
     }
+    occurrences+=temp;
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+
     /*
+    output_mtx.lock();
+    cout << "Thread " << thread_index << " finished in: " << duration.count() << endl;
+    output_mtx.unlock();
     output_mtx.lock();
     cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
     output_mtx.unlock();
@@ -97,9 +127,9 @@ void parallelStringSearch(int num_threads) {
     vector<thread> threads;
 
     for(int i = 0; i < num_threads-1; i++){
-        threads.emplace_back(findStringIstance, i, 0);
+        threads.emplace_back(findStringIstance, i);
     }
-    findStringIstance(num_threads-1, file_size%num_threads); // il main thread e' l'ultimo
+    findStringIstance(num_threads-1); // il main thread e' l'ultimo
 
     for(auto& t : threads){
         t.join(); //attendiamo fine threads

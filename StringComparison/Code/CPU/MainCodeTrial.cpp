@@ -87,8 +87,6 @@ void parallelStringSearch(int num_threads) {
 
     vector<thread> threads;
 
-    //__itt_resume();
-
     for(int i = 0; i < num_threads-1; i++){
         threads.emplace_back(findStringIstance, i, 0);
     }
@@ -96,8 +94,7 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //wait for threads to finish
     }
-   //cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
-   //__itt_pause();
+   cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
 
 }
 
