@@ -9,14 +9,13 @@
 #include <chrono>
 #include <mutex>
 
-#define FILE_PATH "test.txt"
+#define FILE_PATH "gigante_uneven.txt"
 
 //global variables
 using namespace std;
 namespace fs = filesystem;
 
 char* file_buffer;
-char* end_of_file;
 
 char* target_string;
 
@@ -31,6 +30,8 @@ const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
 std::uintmax_t file_size;
 std::uintmax_t chunk_size;
+
+//mutex output_mtx; //DEBUG
 
 void build_table(int len){
     char * head, *tail;
@@ -49,45 +50,60 @@ void build_table(int len){
             head = target_string;
         }
         tail++;
-       // cout << longest_prefix_suffix_array[i]<<" ";
     }
-   // cout <<endl;
 }
-
-//mutex output_mtx; 
 
 void findStringIstance(int thread_index, int remainder){
 
-    char* chunk_start = file_buffer + thread_index * chunk_size;
-
-    //unsigned long file_position = thread_index * chunk_size;
-
     int target_string_length = strlen(target_string);
 
-    unsigned long target_index = 0, candidate_index = 0;
-    int temp = 0;
+    unsigned long target_index = 0, candidate_index = thread_index * chunk_size;
+    int local_occurrences = 0;
 
-    while(candidate_index < chunk_size + remainder){
+    long long bytes_left = chunk_size + remainder;
+    int extra_search_field = (candidate_index + chunk_size + remainder >= file_size) ? 0 : target_string_length - 1;
+
+    /*
+    while(bytes_left > 0 || target_index != 0){
+        if(bytes_left <= 0){
+            extra_search_field--;
+            if(extra_search_field < 0)
+            break;
+        }
+    */ //mostrare come, se il file è uneven, questa versione viene surclassata
+    while(true){
+        if(bytes_left <= 0){
+            if(target_index != 0){
+                extra_search_field--;
+                if(extra_search_field < 0)
+                    break;
+            }else
+                break;
+        }
         
-        if(target_string[target_index] == chunk_start[candidate_index]){
+        if(target_string[target_index] == file_buffer[candidate_index]){
             target_index++;
             candidate_index++;
+            bytes_left--;
             
             if(target_index == target_string_length){
-                occurrences++;
-                temp++;
+                local_occurrences++;
                 target_index = longest_prefix_suffix_array[target_index - 1];
             }
         }else{
             if(target_index != 0)
                 target_index = longest_prefix_suffix_array[target_index - 1];
-            else
+            else{
                 candidate_index++;
+                bytes_left--;
+            }
         }
     }
-    /*
+    occurrences += local_occurrences;
+    /* 
+    //DEBUG
     output_mtx.lock();
-    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << local_occurrences << endl;
     output_mtx.unlock();
     */
 }
@@ -104,12 +120,9 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //attendiamo fine threads
     }
-    cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl;
+    //cout << "Occurrences of \"" << target_string << "\": " << occurrences.load() << endl; //DEBUG
 }
 
-
-
-//intanto mettiamo le cose nell main poi fare funzini esterne
 
 int main(int argc, char* argv[]) {
 
@@ -130,8 +143,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    file_size = 2*1000*1024*1024; //DA LEVARE
+
     chunk_size = file_size / num_threads; //calcolo la dimensione del chunk da assegnare a ogni thread
-    //operazioni per fare il compare
+
     std::ifstream file(FILE_PATH, std::ios::binary);
     
     if (!file) {
@@ -139,7 +154,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     file_buffer = new char[file_size];
-    end_of_file = file_buffer + file_size + 1; // the first address that is not part of the file buffer
 
     // 3. Legge il file un blocco alla volta finché non finisce
     std::uintmax_t bytes_left = file_size;

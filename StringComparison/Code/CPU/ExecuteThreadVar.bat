@@ -4,9 +4,8 @@ setlocal enabledelayedexpansion
 :: percorso file
 cd /d "%~dp0" 
 
-set TARGET_STRING=albero
 set MIN_THREADS=1
-set MAX_THREADS=16
+set MAX_THREADS=12
 set ITERAZIONI=5
 
 :: =====================================================================
@@ -16,11 +15,24 @@ if "%~1"=="" (
     exit /b 1
 )
 
+:: Controllo che il terzo argomento sia presente
+if "%~2"=="" (
+    echo Errore: Devi fornire la parola target come terzo argomento.
+    exit /b 1
+)
+
+:: Assegna il terzo parametro alla variabile
+set "TARGET_STRING=%~2"
+
 :: Estrae SOLO il nome del file ignorando il percorso (es. MainCodeTrial.exe)
 set "ESEGUIBILE_NOME=%~nx1"
 
-:: Imposta il nome del CSV basandosi sul nome dell'eseguibile (senza estensione)
-set "OUTPUT_CSV=%~n1.csv"
+:: Imposta il nome del CSV basandosi sul nome dell'eseguibile e controlla "uneven"
+if /I "%TARGET_STRING%"=="uneven" (
+    set "OUTPUT_CSV=%~n1Uneven.csv"
+) else (
+    set "OUTPUT_CSV=%~n1.csv"
+)
 
 if not exist "!ESEGUIBILE_NOME!" (
     echo Errore: L'eseguibile "!ESEGUIBILE_NOME!" non e' stato trovato in questa cartella.
@@ -38,6 +50,7 @@ echo thread;iterazione;durata > "%OUTPUT_CSV%"
 echo Inizio del benchmark...
 echo I risultati verranno salvati in: %OUTPUT_CSV%
 echo Eseguibile rilevato: !ESEGUIBILE_NOME!
+echo Parola di test: %TARGET_STRING%
 echo.
 
 for /L %%T in (%MIN_THREADS%, 1, %MAX_THREADS%) do (
@@ -58,5 +71,4 @@ for /L %%T in (%MIN_THREADS%, 1, %MAX_THREADS%) do (
 
 echo.
 echo Benchmark completato con successo!
-pause
 endlocal

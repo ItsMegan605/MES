@@ -9,7 +9,7 @@
 #include <mutex>
 #include <windows.h>
 
-#define FILE_PATH "gigante.txt"
+#define FILE_PATH "gigante_uneven.txt"
 
 //global variables
 using namespace std;
@@ -51,35 +51,32 @@ void findStringIstance(int thread_index, int remainder){
         cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
     }
     */
-    
-    
-    //char target_string[10] = {"-----"}; // solo uno cerca!!
-    //if(thread_index == 4)
-    //    strcpy(target_string,"albero");
 
     unsigned long file_position = thread_index * chunk_size;
-    //int temp = 0;
+    int temp = 0;
 
-    chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    //chrono::steady_clock::time_point start = chrono::steady_clock::now();
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
         if(checkString(&file_buffer[file_position], target_string) == strlen(target_string)){
             mtx.lock();
             occurrences++;
             mtx.unlock();
-            //temp++;
+            temp++;
         }
         file_position++;
 
     }
+    /* 
+    //DEBUG
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-
-    output_mtx.lock();
-    //cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
-    cout << "Thread " << thread_index << " finished in: " << duration.count() << endl;
-    output_mtx.unlock();
     
+    output_mtx.lock();
+    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
+    //cout << "Thread " << thread_index << " finished in: " << duration.count() << endl;
+    output_mtx.unlock();
+    */
 }
 
 //creation and thread waiting
@@ -94,12 +91,11 @@ void parallelStringSearch(int num_threads) {
     for(auto& t : threads){
         t.join(); //wait for threads to finish
     }
-   cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
+   //cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
 
 }
 
 int main(int argc, char* argv[]) {
-    //__itt_pause();
     
     if (argc < 3) {
         cout << "Insert the target string and the number of threads as arguments." << endl;
@@ -126,6 +122,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    
+    file_size = 2*1000*1024*1024; //DA LEVARE
+
     chunk_size = file_size / num_threads; //dimension of the chunck for each threas
     std::ifstream file(FILE_PATH, std::ios::binary);
     
