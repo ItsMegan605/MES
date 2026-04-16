@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0" 
 
 set MIN_THREADS=1
-set MAX_THREADS=12
+set MAX_THREADS=16
 set ITERAZIONI=5
 
 :: =====================================================================

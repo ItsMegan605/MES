@@ -21,7 +21,7 @@ echo Inizio l'esecuzione automatizzata di tutti i benchmark...
 echo.
 
 :: Lista di tutti gli eseguibili generati dal primo script di compilazione
-set "EXECUTABLES=MainCodeTrial.exe MainCodeTrialO3.exe OptimizedCodeTrial.exe OptimizedCodeTrialO3.exe UltraOptimizedCodeTrial.exe UltraOptimizedCodeTrialO3.exe"
+set "EXECUTABLES=MainCodeTrial.exe OptimizedCodeTrial.exe OptimizedCodeTrialO3.exe UltraOptimizedCodeTrial.exe UltraOptimizedCodeTrialO3.exe"
 
 :: Ciclo for che itera su ogni singolo eseguibile della lista
 for %%E in (%EXECUTABLES%) do (

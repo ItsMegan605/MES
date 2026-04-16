@@ -22,15 +22,13 @@ int main() {
 
     // 1. Dizionario SENZA la parola target
     vector<string> words_no_target = {
-        "il", "di", "e", "a", "un", "in", "che", "non", "si", "da", "lo", "per", 
-        "con", "sono", "come", "ma", "questo", "io", "se", "ha", "le", "su", 
-        "anche", "tutto", "era", "quello", "mio", "fare", "hanno", "una", "chi", 
         "cosa", "quando", "molto", "prima", "noi", "essere", "stato", "solo", 
         "due", "dove", "tempo", "vita", "anno", "uomo", "giorno", "poco", "casa", 
         "lavoro", "sempre", "sole", "luna", "mare", "montagna", "fuoco", "albero"
         "acqua", "terra", "gatto", "cane", "macchina", "strada", "cielo", "stella", "culo", "catz",
         "pisello","casa", "lavoro", "sempre", "sole", "luna", "mare", "montagna", "fuoco", 
-        "acqua", "terra", "gatto", "cane", "macchina", "forchetta"
+        "acqua", "terra", "gatto", "cane", "macchina", "forchetta", "alberi", "alber", "alba",
+        "albergo", "alberello", "alberro"
     };
 
     // 2. Dizionario CON la parola target 
