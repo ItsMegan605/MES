@@ -9,7 +9,7 @@
 #include <mutex>
 #include <windows.h>
 
-#define FILE_PATH "gigante_uneven.txt"
+#define FILE_PATH "giant_file.txt"
 
 //global variables
 using namespace std;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 
     } catch (const fs::filesystem_error& e) {
         
-        cerr << "Impossibile leggere il file: " << e.what() << '\n';
+        cerr << "Can't read the file: " << e.what() << '\n';
         return 1;
     }
     
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     std::ifstream file(FILE_PATH, std::ios::binary);
     
     if (!file) {
-        cerr << "Errore: impossibile aprire il file per la lettura.\n";
+        cerr << "Error: the file couldn't be opened.\n";
         return 1;
     }
     file_buffer = new char[file_size];

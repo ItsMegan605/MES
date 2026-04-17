@@ -1,19 +1,19 @@
 @echo off
-echo Inizio la compilazione dei file C++...
+echo Starting C++ file compilation...
 
-REM Ciclo for che itera sui nomi base dei file (senza l'estensione .cpp)
+REM For loop iterating through base filenames (without .cpp extension)
 for %%F in (MainCodeTrial OptimizedCodeTrial UltraOptimizedCodeTrial) do (
     echo.
     echo =========================================
-    echo Elaborazione di: %%F.cpp
+    echo Processing: %%F.cpp for VTune
     echo =========================================
 
-    echo [1/2] Compilazione normale per compiler: g++ -g %%F.cpp -o %%F_compiler
+    echo [1/2] Standard compilation for compiler: g++ -g %%F.cpp -o %%F_compiler
     g++ -g %%F.cpp -o %%F_compiler
 
-    echo [2/2] Compilazione ottimizzata per compiler: g++ -g -O3 %%F.cpp -o %%FO3_compiler
+    echo [2/2] Optimized compilation for compiler: g++ -g -O3 %%F.cpp -o %%FO3_compiler
     g++ -g -O3 %%F.cpp -o %%FO3_compiler
 )
 
 echo.
-echo Tutte le compilazioni sono terminate!
+echo All compilations completed!

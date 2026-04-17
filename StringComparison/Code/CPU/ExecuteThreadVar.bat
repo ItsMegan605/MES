@@ -1,74 +1,74 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: percorso file
-cd /d "%~dp0" 
+:: Set current directory to script path
+cd /d "%~dp0"
 
 set MIN_THREADS=1
 set MAX_THREADS=16
-set ITERAZIONI=5
+set ITERATIONS=5
 
 :: =====================================================================
 
-if "%~1"=="" (
-    echo Errore: Devi fornire il nome dell'eseguibile come parametro.
+if "%~1 Resource"==" " (
+    echo Error: You must provide the executable name as a parameter.
     exit /b 1
 )
 
-:: Controllo che il terzo argomento sia presente
+:: Check if the second argument (target word) is present
 if "%~2"=="" (
-    echo Errore: Devi fornire la parola target come terzo argomento.
+    echo Error: You must provide the target word as the second argument.
     exit /b 1
 )
 
-:: Assegna il terzo parametro alla variabile
+:: Assign the second parameter to the variable
 set "TARGET_STRING=%~2"
 
-:: Estrae SOLO il nome del file ignorando il percorso (es. MainCodeTrial.exe)
-set "ESEGUIBILE_NOME=%~nx1"
+:: Extract ONLY the filename, ignoring the path (e.g., MainCodeTrial.exe)
+set "EXE_NAME=%~nx1"
 
-:: Imposta il nome del CSV basandosi sul nome dell'eseguibile e controlla "uneven"
+:: Set CSV name based on the executable name and check for "uneven"
 if /I "%TARGET_STRING%"=="uneven" (
     set "OUTPUT_CSV=%~n1Uneven.csv"
 ) else (
     set "OUTPUT_CSV=%~n1.csv"
 )
 
-if not exist "!ESEGUIBILE_NOME!" (
-    echo Errore: L'eseguibile "!ESEGUIBILE_NOME!" non e' stato trovato in questa cartella.
+if not exist "!EXE_NAME!" (
+    echo Error: The executable "!EXE_NAME!" was not found in this folder.
     exit /b 1
 )
 
-if not exist "gigante.txt" (
-    echo [ATTENZIONE] Il file "gigante.txt" non e' presente nella directory. 
+if not exist "giant_file.txt" (
+    echo [WARNING] The file "giant_file.txt" is not present in the directory.
     echo.
 )
 
-:: MODIFICA 1: Uso del punto e virgola (;) e rinominato in "durata"
-echo thread;iterazione;durata > "%OUTPUT_CSV%"
+:: Header: Using semicolon (;) as a separator and "duration" for clarity
+echo thread;iteration;duration > "%OUTPUT_CSV%"
 
-echo Inizio del benchmark...
-echo I risultati verranno salvati in: %OUTPUT_CSV%
-echo Eseguibile rilevato: !ESEGUIBILE_NOME!
-echo Parola di test: %TARGET_STRING%
+echo Starting benchmark...
+echo Results will be saved to: %OUTPUT_CSV%
+echo Detected executable: !EXE_NAME!
+echo Test word: %TARGET_STRING%
 echo.
 
 for /L %%T in (%MIN_THREADS%, 1, %MAX_THREADS%) do (
-    echo Esecuzione test con %%T thread...
-    
-    for /L %%I in (1, 1, %ITERAZIONI%) do (
-        
-        :: Esecuzione pulita: essendo nella stessa cartella, basta chiamare il nome del file
-        for /f "delims=" %%R in ('!ESEGUIBILE_NOME! %TARGET_STRING% %%T') do (
+    echo Running tests with %%T threads...
+
+    for /L %%I in (1, 1, %ITERATIONS%) do (
+
+        :: Clean execution: since it's in the same folder, just call the filename
+        for /f "delims=" %%R in ('!EXE_NAME! %TARGET_STRING% %%T') do (
             set THROUGHPUT=%%R
         )
-        echo Iterazione %%I: Throughput = !THROUGHPUT! ms
-        
-        :: MODIFICA 2: Sostituite le virgole con il punto e virgola (;)
+        echo Iteration %%I: Throughput = !THROUGHPUT! ms
+
+        :: Save to CSV using semicolon (;) separator
         echo %%T;%%I;!THROUGHPUT! >> "%OUTPUT_CSV%"
     )
 )
 
 echo.
-echo Benchmark completato con successo!
+echo Benchmark completed successfully!
 endlocal

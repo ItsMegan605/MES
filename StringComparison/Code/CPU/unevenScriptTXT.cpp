@@ -7,89 +7,95 @@
 
 using namespace std;
 
+/**
+ * Script to generate a large text file with a target word ("uneven")
+ * distributed only within specific intervals (shuffled chunks).
+ */
 int main() {
-    // Definizione della dimensione esatta: 4 GB
-    const long long TARGET_SIZE = 4000LL * 1024 * 1024; 
-    const string filename = "gigante_uneven.txt";
-    
-    // Dimensione del buffer: 500 MB
-    const int BUFFER_SIZE = 500 * 1024 * 1024; 
+    // Exact size definition: 4 GB
+    const long long TARGET_SIZE = 4000LL * 1024 * 1024;
+    const string filename = "uneven_giant_file.txt";
 
-    // --- PARAMETRI PER LA DISTRIBUZIONE IRREGOLARE ---
-    const int N = 12; 
-    const int M = 4;  
+    // Buffer size: 500 MB
+    const int BUFFER_SIZE = 500 * 1024 * 1024;
+
+    // --- IRREGULAR DISTRIBUTION PARAMETERS ---
+    const int N = 12;            // Total number of intervals/chunks
+    const int M = 4;             // Number of intervals that WILL contain the target word
     const string TARGET_WORD = "uneven";
 
-    // 1. Dizionario SENZA la parola target
+    // 1. Dictionary WITHOUT the target word
     vector<string> words_no_target = {
-        "cosa", "quando", "molto", "prima", "noi", "essere", "stato", "solo", 
-        "due", "dove", "tempo", "vita", "anno", "uomo", "giorno", "poco", "casa", 
-        "lavoro", "sempre", "sole", "luna", "mare", "montagna", "fuoco", "albero"
-        "acqua", "terra", "gatto", "cane", "macchina", "strada", "cielo", "stella", "culo", "catz",
-        "pisello","casa", "lavoro", "sempre", "sole", "luna", "mare", "montagna", "fuoco", 
-        "acqua", "terra", "gatto", "cane", "macchina", "forchetta", "alberi", "alber", "alba",
-        "albergo", "alberello", "alberro"
+        "what", "when", "much", "before", "we", "be", "been", "only",
+        "two", "where", "time", "life", "year", "man", "day", "little", "home",
+        "work", "always", "sun", "moon", "sea", "mountain", "fire", "tree",
+        "water", "earth", "cat", "dog", "car", "road", "sky", "star",
+        "house", "job", "always", "sun", "moon", "ocean", "peak", "flame",
+        "liquid", "ground", "kitten", "puppy", "vehicle", "fork", "trees", "wood", "dawn",
+        "hotel", "sapling", "branch"
     };
 
-    // 2. Dizionario CON la parola target 
+    // 2. Dictionary WITH the target word
     vector<string> words_all = words_no_target;
     words_all.push_back(TARGET_WORD);
     words_all.push_back(TARGET_WORD);
 
     random_device rd;
-    mt19937 rng(rd()); 
+    mt19937 rng(rd());
     uniform_int_distribution<int> dist_no(0, words_no_target.size() - 1);
     uniform_int_distribution<int> dist_all(0, words_all.size() - 1);
     uniform_int_distribution<int> dist_newline(0, 14);
 
     long long INTERVAL_SIZE = TARGET_SIZE / N;
     vector<bool> valid_intervals(N, false);
-    
+
+    // Mark M intervals as "valid" to contain the target word
     for (int i = 0; i < M && i < N; ++i) {
         valid_intervals[i] = true;
     }
-    
+
+    // Randomize which intervals will contain the word
     shuffle(valid_intervals.begin(), valid_intervals.end(), rng);
 
-    cout << "Inizio la generazione di " << TARGET_SIZE / (1024 * 1024) << " MB divisa in " << N << " intervalli." << endl;
-    cout << "La parola '" << TARGET_WORD << "' potra' comparire SOLO nei seguenti intervalli: ";
+    cout << "Starting generation of " << TARGET_SIZE / (1024 * 1024) << " MB split into " << N << " intervals." << endl;
+    cout << "The word '" << TARGET_WORD << "' will appear ONLY in the following intervals: ";
     for (int i = 0; i < N; ++i) {
         if (valid_intervals[i]) cout << i + 1 << " ";
     }
-    cout << "\n\nPotrebbe volerci qualche minuto..." << endl;
+    cout << "\n\nThis might take a few minutes..." << endl;
 
     ofstream outFile(filename, ios::binary);
     if (!outFile) {
-        cerr << "Errore critico: Impossibile creare o aprire il file!" << endl;
+        cerr << "Critical Error: Could not create or open the file!" << endl;
         return 1;
     }
 
     long long bytesWritten = 0;
     string buffer;
-    buffer.reserve(BUFFER_SIZE + 100); 
+    buffer.reserve(BUFFER_SIZE + 100);
 
     while (bytesWritten < TARGET_SIZE) {
         buffer.clear();
-        
+
         while (buffer.size() < BUFFER_SIZE && (bytesWritten + buffer.size()) < TARGET_SIZE) {
-            
+
             long long current_pos = bytesWritten + buffer.size();
             int current_interval = current_pos / INTERVAL_SIZE;
-            if (current_interval >= N) current_interval = N - 1; 
+            if (current_interval >= N) current_interval = N - 1;
 
             string next_word;
-            
+
             if (valid_intervals[current_interval]) {
                 next_word = words_all[dist_all(rng)];
-                
-                // --- BLOCCO ANTI-SCONFINAMENTO ---
-                // Se abbiamo estratto "albero", verifichiamo che la parola (più lo spazio)
-                // non superi fisicamente il confine dell'intervallo attuale.
+
+                // --- BOUNDARY PROTECTION BLOCK ---
+                // If we picked the target word, we must ensure it (plus space)
+                // doesn't physically cross into a forbidden interval.
                 if (next_word == TARGET_WORD) {
                     long long end_pos = current_pos + next_word.length() + 1;
                     int next_interval = end_pos / INTERVAL_SIZE;
-                    
-                    // Se la parola sconfina in un intervallo che è vietato, la sostituiamo
+
+                    // If the word would overflow into a forbidden interval, replace it
                     if (next_interval < N && !valid_intervals[next_interval]) {
                         next_word = words_no_target[dist_no(rng)];
                     }
@@ -97,31 +103,31 @@ int main() {
             } else {
                 next_word = words_no_target[dist_no(rng)];
             }
-            
+
             buffer += next_word + " ";
-            
+
             if (dist_newline(rng) == 0) {
                 buffer += "\n";
             }
         }
-        
-        // --- TRONCAMENTO ESATTO ---
-        // Se il buffer ha sforato la dimensione esatta del target, lo tagliamo.
-        // Questo garantisce che la divisione in chunk in lettura coincida al byte.
+
+        // --- EXACT TRUNCATION ---
+        // If the buffer exceeds the exact target size, resize it.
+        // This ensures the byte alignment matches perfectly during reading/chunking.
         if (bytesWritten + buffer.size() > TARGET_SIZE) {
             buffer.resize(TARGET_SIZE - bytesWritten);
         }
-        
+
         outFile.write(buffer.c_str(), buffer.size());
         bytesWritten += buffer.size();
 
         if (bytesWritten % (500LL * 1024 * 1024) < buffer.size()) {
-            cout << "Progresso: " << bytesWritten / (1024 * 1024) << " MB scritti su " << TARGET_SIZE / (1024 * 1024) << " MB..." << endl;
+            cout << "Progress: " << bytesWritten / (1024 * 1024) << " MB written out of " << TARGET_SIZE / (1024 * 1024) << " MB..." << endl;
         }
     }
 
     outFile.close();
-    cout << "\nOperazione completata con successo!" << endl;
+    cout << "\nOperation completed successfully!" << endl;
     
     return 0;
 }

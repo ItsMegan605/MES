@@ -10,7 +10,7 @@
 #include <mutex>
 #include <windows.h>
 
-#define FILE_PATH "gigante_uneven.txt"
+#define FILE_PATH "giant_file.txt"
 
 //global variables
 using namespace std;
