@@ -1,168 +1,57 @@
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <mutex>
-#include <windows.h>
+#include "shared.h"
+#include "shared.cpp"
 
-#define FILE_PATH "giant_file.txt"
-
-//global variables
-using namespace std;
-namespace fs = filesystem;
-//pointers to save the text and the string to compare
-char* file_buffer;
-char* end_of_file;
-
-char* target_string;
-
-int occurrences = 0;
-int num_threads;
-mutex mtx;
-mutex output_mtx; 
-
-const std::uintmax_t max_read_size = 2000LL* 1024*1024;
-
-std::uintmax_t file_size;
-std::uintmax_t chunk_size;
+//the main is located in the shared.cpp file
+int main(int argc, char* argv[]);
 
 //function to chech if the chars match the target word
 //returns the number of chars that match, if it is equal to the length of the target string then we have found an occurrence
 unsigned long checkString(char* candidate_match, char* target){
+
     unsigned long j;
+
     for(j = 0; j < strlen(target); j++){
         if(candidate_match[j] != target[j] || (candidate_match + strlen(target) >= end_of_file)){
             break;
         }
     }
+
     return j;
 }
 
 //functon executed by every thread, analyzes a chunk of the file and counts the occurrences 
 void findStringIstance(int thread_index, int remainder){
-    /*
-    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << thread_index);
-    if (dw == 0) {
-        DWORD dwErr = GetLastError();
-        cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
-    }
-    */
 
     unsigned long file_position = thread_index * chunk_size;
-    int temp = 0;
-
-    //chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    
+    #ifdef DEBUG
+    
+        int local_occurrences = 0;
+        chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    
+    #endif
+    
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
         if(checkString(&file_buffer[file_position], target_string) == strlen(target_string)){
+            
             mtx.lock();
             occurrences++;
             mtx.unlock();
-            temp++;
+            
+            #ifdef DEBUG
+
+                local_occurrences++;
+            
+            #endif    
         }
         file_position++;
 
     }
-    /* 
-    //DEBUG
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
-    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
     
-    output_mtx.lock();
-    cout << "Thread " << thread_index << " finished. Occurrences so far: " << temp << endl;
-    //cout << "Thread " << thread_index << " finished in: " << duration.count() << endl;
-    output_mtx.unlock();
-    */
-}
-
-//creation and thread waiting
-void parallelStringSearch(int num_threads) {
-
-    vector<thread> threads;
-
-    for(int i = 0; i < num_threads-1; i++){
-        threads.emplace_back(findStringIstance, i, 0);
-    }
-    findStringIstance(num_threads-1, file_size%num_threads); //main thread is the last one
-    for(auto& t : threads){
-        t.join(); //wait for threads to finish
-    }
-   //cout << "Occurrences of \"" << target_string << "\": " << occurrences<< endl;
-
-}
-
-int main(int argc, char* argv[]) {
+    #ifdef DEBUG
     
-    if (argc < 3) {
-        cout << "Insert the target string and the number of threads as arguments." << endl;
-        return 1;
-    }
+        debug_print(thread_index, start, local_occurrences);
     
-    target_string = argv[1]; //word to compare, taken from terminal
-    num_threads = stoi(argv[2]); //number of threads, taken from terminal
-    
-    /*
-    DWORD_PTR dw = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << num_threads-1);
-    if (dw == 0) {
-        DWORD dwErr = GetLastError();
-        cerr << "SetThreadAffinityMask failed, GLE=" << dwErr << '\n';
-    }
-    */
-
-    try {
-        file_size = fs::file_size(FILE_PATH);
-
-    } catch (const fs::filesystem_error& e) {
-        
-        cerr << "Can't read the file: " << e.what() << '\n';
-        return 1;
-    }
-    
-    
-    file_size = 2*1000*1024*1024; //DA LEVARE
-
-    chunk_size = file_size / num_threads; //dimension of the chunck for each threas
-    std::ifstream file(FILE_PATH, std::ios::binary);
-    
-    if (!file) {
-        cerr << "Error: the file couldn't be opened.\n";
-        return 1;
-    }
-    file_buffer = new char[file_size];
-    end_of_file = file_buffer + file_size + 1;
-    
-    // 3. Legge il file un blocco alla volta finché non finisce
-    std::uintmax_t bytes_left = file_size;
-    char* buffer_offset = file_buffer;
-    while(bytes_left){
-        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
-
-        file.read(buffer_offset, bytes_to_read);
-        if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
-            cout <<"Error in file.read()"<< endl;
-            delete[] file_buffer;
-            return 0;
-        }
-        buffer_offset += bytes_to_read;
-        bytes_left -= bytes_to_read;
-    }
-
-    //timing the search
-    chrono::steady_clock::time_point start = chrono::steady_clock::now();
-    parallelStringSearch(num_threads);
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
-
-    chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    //cout << duration.count() <<endl;
-
-    cout << ((double)file_size / duration.count())* 1000 << endl;
-
-    //close the file 
-    delete[] file_buffer;
-    return 0;
-    
+    #endif
 }
