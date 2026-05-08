@@ -4,13 +4,13 @@
 
 void findStringIstance(int, int); // this function will be different depending on which program is run
 
-void debug_print(int thread_index, chrono::steady_clock::time_point start, unsigned int local_occurrences){
+void debug_print(int thread_index, chrono::steady_clock::time_point start, unsigned int local_occurrences, int chunks_taken = 1){
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
 
     output_mtx.lock();
-    cout << "Th " << thread_index << " time: " << duration.count() << " ms | Occurrences: "  << local_occurrences << endl;
+    cout << "Th " << thread_index << " time: " << duration.count() << " ms | Occurrences: "  << local_occurrences << " | Chunks: "<< chunks_taken <<endl;
     output_mtx.unlock();
 }
 
@@ -32,12 +32,31 @@ void build_table(int len){
             longest_prefix_suffix_array[i] = pos;
             head++;
         }else{
-            pos = 0;
-            longest_prefix_suffix_array[i]=0;
-            head = target_string;
+            if (pos != 0) {
+                // Retrocediamo all'ultimo prefisso valido
+                pos = longest_prefix_suffix_array[pos - 1];
+                head = target_string + pos;
+            
+                i--;    
+                tail--; 
+            } else {
+                longest_prefix_suffix_array[i] = 0;
+            }
         }
         tail++;
     }
+
+    #ifdef DEBUG
+        cout<<"LPS: [ ";
+        for(int i = 0; i < len; i++){
+            cout<<longest_prefix_suffix_array[i];
+            if(i != len - 1) 
+                cout<<", ";
+        }
+
+            cout<<"]"<<endl;
+    #endif 
+
 }
 
 

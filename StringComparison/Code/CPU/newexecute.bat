@@ -6,18 +6,14 @@ setlocal enabledelayedexpansion
 :: =====================================================================
 set MIN_THREADS=1
 set MAX_THREADS=16
-set NUM_REP=15
-set STRINGS=xxxxxxxxxxxxx unevenstring myluckyphrase
-set SIZES=500 1000 2000 4000
-set EXECUTABLES=MainCodeTrial.exe OptimizedCodeTrial.exe UltraOptimizedCodeTrial.exe UltraOptimizedCodeTrialO3.exe
-
+set NUM_REP=10
+set STRINGS=------------ unevenstring abracadabra
+set SIZES= 500 1000 2000
+:: set EXECUTABLES=MainCodeTrial.exe OptimizedCodeTrial.exe UltraOptimizedCodeTrial.exe UltraOptimizedCodeTrialO3.exe
+set EXECUTABLES= original.exe
 :: Configurazione per MainCodeTrial
 set MAIN_LIMIT=2000
 :: =====================================================================
-
-:: 1. PREVENZIONE SLEEP / RISPARMIO ENERGETICO
-:: Salvo il profilo energetico attuale per ripristinarlo alla fine
-for /f "tokens=4" %%a in ('powercfg /getactivescheme') do set OLD_GUID=%%a
 
 echo Ricorda di disattivare il risparmio energetico -w-
 :: 2. SCELTA MODALITÀ

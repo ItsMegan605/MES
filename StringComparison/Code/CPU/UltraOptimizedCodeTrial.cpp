@@ -28,10 +28,18 @@ void findStringIstance(int thread_index, int){
     #ifdef DEBUG
     
         chrono::steady_clock::time_point start = chrono::steady_clock::now();
+        int chunks_taken = 0;
     
     #endif
     
     while(current_chunk_start < file_size){
+
+        #ifdef DEBUG
+
+            chunks_taken++;
+
+        #endif
+
         while(true){
             if(bytes_left <= 0){
                 if(target_index != 0){
@@ -59,13 +67,12 @@ void findStringIstance(int thread_index, int){
                 }
             }
         }
-        if(extra_search_field < 0)
-            break;
+        
         current_chunk_start = getNewChunk();
         target_index = 0;
         candidate_index = current_chunk_start;
 
-        if(file_size - current_chunk_start < CHUNK_SIZE){
+        if(file_size - current_chunk_start <= CHUNK_SIZE){
             bytes_left = file_size - current_chunk_start;
             extra_search_field = 0;
         } else {
@@ -78,7 +85,7 @@ void findStringIstance(int thread_index, int){
 
     #ifdef DEBUG
     
-        debug_print(thread_index, start, local_occurrences);
+        debug_print(thread_index, start, local_occurrences,chunks_taken);
     
     #endif
 }

@@ -13,8 +13,8 @@ using namespace std;
  */
 int main() {
     // Exact size definition: 4 GB
-    const long long TARGET_SIZE = 4000LL * 1024 * 1024;
-    const string filename = "uneven_giant_file.txt";
+    const long long TARGET_SIZE = 8000LL * 1024 * 1024;
+    const string filename = "giant_file.txt";
 
     // Buffer size: 500 MB
     const int BUFFER_SIZE = 500 * 1024 * 1024;
@@ -22,17 +22,28 @@ int main() {
     // --- IRREGULAR DISTRIBUTION PARAMETERS ---
     const int N = 12;            // Total number of intervals/chunks
     const int M = 4;             // Number of intervals that WILL contain the target word
-    const string TARGET_WORD = "uneven";
+    const string TARGET_WORD = "unevenstring";
 
     // 1. Dictionary WITHOUT the target word
     vector<string> words_no_target = {
-        "what", "when", "much", "before", "we", "be", "been", "only",
+        "before", "been", "only",
         "two", "where", "time", "life", "year", "man", "day", "little", "home",
-        "work", "always", "sun", "moon", "sea", "mountain", "fire", "tree",
-        "water", "earth", "cat", "dog", "car", "road", "sky", "star",
+        "work", "always", "sun", "moon", "sea", "mountain",  "tree",
+        "water", "earth", "cat", "dog", "car", "road", "star",
         "house", "job", "always", "sun", "moon", "ocean", "peak", "flame",
         "liquid", "ground", "kitten", "puppy", "vehicle", "fork", "trees", "wood", "dawn",
-        "hotel", "sapling", "branch"
+        "hotel", "sapling", "branch", "abracadabra", "strawberry", "opportunity", "environment",
+        "conversation", "miscellaneous", "unpredictable", "congratulations" , "characteristics",
+        "absolutely", "acceptable", "background", "collection", "completely", "department", "experience", "foundation", 
+        "generation", "importance", "literature", "management", "particular", "philosophy", "technology", "understand", "vocabulary", 
+        "achievement", "appropriate", "comfortable", "competitive", "description", "educational", "fundamental", "imagination", "independent", "information", 
+        "measurement", "performance", "perspective", "significant", "temperature", "agricultural", "championship", "construction", "contribution", 
+        "intelligence", "introduction", "manufacturer", 
+        "organization", "presentation", "relationship", "satisfaction", "successfully", "transmission", "accommodation", 
+        "administrator", "communication", "comprehensive", "consideration", "environmental", "international", "investigation",
+        "manufacturing", "understanding", "administration", "discrimination", "identification", "implementation", "infrastructure", 
+        "representative", "transportation", "acknowledgement", "instrumentation", "interchangeable", "procrastination", "recommendations", 
+        "standardization"
     };
 
     // 2. Dictionary WITH the target word

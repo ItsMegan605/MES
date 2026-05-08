@@ -6,12 +6,12 @@ int main(int argc, char* argv[]);
 
 //function to chech if the chars match the target word
 //returns the number of chars that match, if it is equal to the length of the target string then we have found an occurrence
-unsigned long checkString(char* candidate_match, char* target, int target_len){
+unsigned long checkString(char* candidate_match, char* target){
 
     unsigned long j;
 
-    for(j = 0; j < target_len; j++){
-        if(candidate_match[j] != target[j] || (candidate_match + target_len >= end_of_file)){
+    for(j = 0; j < strlen(target); j++){
+        if(candidate_match[j] != target[j] || (candidate_match + strlen(target) >= end_of_file)){
             break;
         }
     }
@@ -30,11 +30,10 @@ void findStringIstance(int thread_index, int remainder){
         chrono::steady_clock::time_point start = chrono::steady_clock::now();
     
     #endif
-    int target_len = strlen(target_string);
     
     for(unsigned long i = 0; i < chunk_size + remainder; i++){
         
-        if(checkString(&file_buffer[file_position], target_string,target_len) == target_len){
+        if(checkString(&file_buffer[file_position], target_string) == strlen(target_string)){
             
             mtx.lock();
             occurrences++;

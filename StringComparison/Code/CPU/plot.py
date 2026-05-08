@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 RIPETIZIONI = 10
 THREAD = 16
 TARGET_STRINGS = ["------------", "unevenstring","abracadabra"]
-SIZES = [500,1000,4000]
+SIZES = [500,1000,2000]
 
 def analizza_e_grafica(csv_file, reps=10, max_threads=16, target_strings=None, file_sizes=None):
     """
@@ -92,7 +92,10 @@ def analizza_e_grafica(csv_file, reps=10, max_threads=16, target_strings=None, f
 # ==== ESEMPI DI ESECUZIONE ====
 
 # 1. Caso base (usa tutto quello che c'è nel CSV):
-file_name = input("inserisci il percorso del file: ")
+# Assegna direttamente il nome del file come stringa
+file_name = "originalFull.csv"
+
+# Richiama la funzione
 analizza_e_grafica(file_name, RIPETIZIONI, THREAD, TARGET_STRINGS, SIZES)
 
 # 2. Caso personalizzato (solo 5 ripetizioni, max 8 thread, e filtra specifiche stringhe):

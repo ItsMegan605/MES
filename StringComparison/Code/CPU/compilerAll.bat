@@ -2,7 +2,7 @@
 echo Starting C++ file compilation...
 
 REM For loop iterating through base filenames (without .cpp extension)
-for %%F in (MainCodeTrial OptimizedCodeTrial UltraOptimizedCodeTrial) do (
+for %%F in (MainCodeTrial OptimizedCodeTrial UltraOptimizedCodeTrial mainCodeOriginal) do (
     echo.
     echo =========================================
     echo Processing: %%F.cpp for VTune
