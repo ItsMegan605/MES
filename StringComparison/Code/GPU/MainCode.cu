@@ -14,84 +14,50 @@
 #include <cuda_runtime.h>
 //#include <windows.h>
 
-#define FILE_PATH "../giant_file.txt"
+#define FILE_PATH "../CPU/giant_file.txt"
 
-#define MAX_VRAM 8000 // in MByte
+#define MAX_VRAM (unsigned long long)8000*1024*1024 // in MByte
+#define MAX_TARGET_STR 256
 
 using namespace std;
-namespace fs = filesystem;
+namespace fs = std::filesystem;
 
 //windows uses 32 bit values for file reading
 const std::uintmax_t max_read_size = 2000LL* 1024*1024;
 
-// GPU pointers
-char* d_file_buffer;
-unsigned int* d_occurrences;
-__constant__ char* d_target_string[];
-__constant__ unsigned int d_target_sting_len;
-__constant__ unsigned long long  d_file_size;
-__shared__ char d_local_buffer[];
 
-// this file contains all the code shared between the various versions, main included
+// constant GPU pointers
+__constant__ char d_target_string[MAX_TARGET_STR];
+__constant__ unsigned int d_target_string_len;
+__constant__ unsigned long long  d_totalThreads;
 
-void findStringIstance(int, int); // this function will be different depending on which program is run
+__global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrences){
 
-void debug_print(int thread_index, chrono::steady_clock::time_point start, unsigned int local_occurrences, int chunks_taken = 1){
-
-}
-/*
-
-void build_table(char* target_string, int len,  int* longest_prefix_suffix_array){
-
-    char * head, *tail;
-    head = tail = target_string;
-    
-    
-    longest_prefix_suffix_array[0]=0; // the first element is always 0, therefore ...
-    tail++; // ... we start from the second element
-    
-    int pos = 0;
-
-    for(int i = 1; i < len; i++){
-
-        if(*tail == *head){
-            pos++;
-            longest_prefix_suffix_array[i] = pos;
-            head++;
-        }else{
-            if (pos != 0) {
-                // Retrocediamo all'ultimo prefisso valido
-                pos = longest_prefix_suffix_array[pos - 1];
-                head = target_string + pos;
-            
-                i--;    
-                tail--; 
-            } else {
-                longest_prefix_suffix_array[i] = 0;
-            }
-        }
-        tail++;
-    }
-
-    #ifdef DEBUG
-        cout<<"LPS: [ ";
-        for(int i = 0; i < len; i++){
-            cout<<longest_prefix_suffix_array[i];
-            if(i != len - 1) 
-                cout<<", ";
-        }
-
-            cout<<"]"<<endl;
-    #endif 
-
-}
-    */
-
-__global__ void parallelStringSearch(){//char* file_buffer, char* target_string, unsigned int* target_string_len, unsigned int* occurrences){
-
-    int id = threadIdx.x + blockDim.x * blockIdx.x;
+    unsigned long long global_id = threadIdx.x + (unsigned long long)blockDim.x * blockIdx.x;
+    int block_pos = threadIdx.x;
+    int block_size = blockDim.x;
     
     extern __shared__ char shared_buffer[];
+
+    if(global_id < d_totalThreads)
+        shared_buffer[block_pos] = file_buffer[global_id];
+
+    // gestire caso stringa_len - 1 > blocco ma stica
+    if(block_pos < d_target_string_len - 1)
+        shared_buffer[block_size + block_pos] = file_buffer[block_size + global_id];
+
+    __syncthreads();
+
+    int i = 0;
+    for(; i < d_target_string_len; i++){
+        if(d_target_string[i] != shared_buffer[block_pos + i])
+            break;
+    }
+    
+
+    if(i == d_target_string_len)
+        atomicAdd(occurrences, 1);
+
 
 }
 
@@ -102,16 +68,11 @@ int main(int argc, char* argv[]) {
         cout << "Insert the target string and (optional) a file limit expressed in MBs." << endl;
         return 1;
     }
-
     std::uintmax_t file_size;
-
     char* target_string;
-
     //int* longest_prefix_suffix_array;
-
     target_string = argv[1]; //word to compare, taken from terminal
     //num_threads = stoi(argv[2]); //number of threads, taken from terminal  
-
 
     try {
         file_size = fs::file_size(FILE_PATH);
@@ -123,7 +84,7 @@ int main(int argc, char* argv[]) {
     }
 
     if(argc > 2){
-        std::uintmax_t file_limit = std::strtoull(argv[3], nullptr, 10)*1024*1024;
+        std::uintmax_t file_limit = std::strtoull(argv[2], nullptr, 10)*1024*1024;
         file_size = (file_limit < file_size)? file_limit : file_size;
     }
 
@@ -135,8 +96,6 @@ int main(int argc, char* argv[]) {
     
     #endif
 
-    //chunk_size = file_size / num_threads; //static chunk size for each thread
-
     std::ifstream file(FILE_PATH, std::ios::binary);
     
     if (!file) {
@@ -145,19 +104,8 @@ int main(int argc, char* argv[]) {
     }
 
     char* file_buffer = new char[file_size];
-    char* end_of_file = file_buffer + file_size + 1;
 
     int target_string_len = strlen(target_string);
-
-    cudaMalloc((void **) d_file_buffer, file_size);
-    cudaMalloc((void **) d_occurrences, sizeof(unsigned int));
-    
-    unsigned long long threadsPerBlock = 128;
-    unsigned long long blocksPerGrid = (file_size - target_string_len + 1) / threadsPerBlock;
-
-    size_t shared_memory_size = threadsPerBlock + target_string_len - 1; 
-
-
 
     // we read one file block at the time, due to windows file size constraints
     std::uintmax_t bytes_left = file_size;
@@ -176,20 +124,39 @@ int main(int argc, char* argv[]) {
         bytes_left -= bytes_to_read;
     }
 
-    cudaMemcpy((void *)d_file_buffer,file_buffer,file_size,cudaMemcpyHostToDevice);
-    cudaMemcpy((void *)d_target_string,target_string,target_string_len,cudaMemcpyHostToDevice);
+    // GPU pointers
+    char* d_file_buffer;
+    unsigned int* d_occurrences;
+        
+    cudaMalloc((void **) &d_file_buffer, file_size);
+    cudaMalloc((void **) &d_occurrences, sizeof(unsigned int));
+    
+    unsigned long long threadsPerBlock = 128;
+    unsigned long long startingPositions = file_size - target_string_len + 1; //1021
+    unsigned long long blocksPerGrid = startingPositions / threadsPerBlock + ((startingPositions % threadsPerBlock > 0) ? 1: 0);
 
-    cudaMemset((void *)d_occurrences,0,sizeof(unsigned int));
+    size_t shared_memory_size = threadsPerBlock + target_string_len - 1; 
 
 
-    // we build the lps array, used by the kmp string match algorythm
+    cudaMemcpy((void *)d_file_buffer, file_buffer, file_size, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
+    cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
+    cudaMemcpyToSymbol(d_totalThreads, &startingPositions, sizeof(unsigned long long));
+
+
+    
+    cudaMemset((void *)d_occurrences,0,sizeof(unsigned int)); //OOO
+
+
+    //we build the lps array, used by the kmp string match algorythm
     //longest_prefix_suffix_array = new int[target_string_len];
     //build_table(target_string, target_string_len, longest_prefix_suffix_array);
 
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     
-    parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(); //DA CAMBIARE
-    
+    parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
+    cudaDeviceSynchronize();
+
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
@@ -199,6 +166,7 @@ int main(int argc, char* argv[]) {
     cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned int), cudaMemcpyDeviceToHost);
     
     #ifdef DEBUG
+    
         cout<<"Occurrences: "<< occurrences <<endl;
         cout<<"Total duration: " << duration.count() / (double) 1000 << " s | Throughput: ";
     
@@ -211,9 +179,9 @@ int main(int argc, char* argv[]) {
     delete[] file_buffer;
 
     cudaFree((void*)d_file_buffer);
-    cudaFree((void*)d_target_sting_len);
     cudaFree((void*)d_occurrences);
-    cudaFree((void*)d_target_string);
+    //cudaFree((void*)d_target_sting_len);
+    //cudaFree((void*)d_target_string);
     
     return 0;
     
