@@ -1,119 +1,89 @@
-#define DEBUG // uncomment for debug output
+#include "shared.h"
 
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <mutex>
-#include <stdio.h>
-#include <cuda_runtime.h>
-//#include <windows.h>
+// this file contains the code shared between all versions. implementation-specific
+// functions will be declared here, and defined in the respective files
 
-#define FILE_PATH "../giant_file.txt"
+__global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrences);
 
-#define MAX_VRAM 8000 // in MByte
+void implementationDependantManagement();
 
-using namespace std;
-namespace fs = filesystem;
 
-//windows uses 32 bit values for file reading
-const std::uintmax_t max_read_size = 2000LL* 1024*1024;
-
-// GPU pointers
-char* d_file_buffer;
-unsigned int* d_occurrences;
-__constant__ char* d_target_string[];
-__constant__ unsigned int d_target_sting_len;
-__constant__ unsigned long long  d_file_size;
-__shared__ char d_local_buffer[];
-
-// this file contains all the code shared between the various versions, main included
-
-void findStringIstance(int, int); // this function will be different depending on which program is run
-
-void debug_print(int thread_index, chrono::steady_clock::time_point start, unsigned int local_occurrences, int chunks_taken = 1){
-
-}
-/*
-
-void build_table(char* target_string, int len,  int* longest_prefix_suffix_array){
-
-    char * head, *tail;
-    head = tail = target_string;
+bool read_file_from_disk(){
     
+    std::ifstream file(FILE_PATH, std::ios::binary);
     
-    longest_prefix_suffix_array[0]=0; // the first element is always 0, therefore ...
-    tail++; // ... we start from the second element
-    
-    int pos = 0;
-
-    for(int i = 1; i < len; i++){
-
-        if(*tail == *head){
-            pos++;
-            longest_prefix_suffix_array[i] = pos;
-            head++;
-        }else{
-            if (pos != 0) {
-                // Retrocediamo all'ultimo prefisso valido
-                pos = longest_prefix_suffix_array[pos - 1];
-                head = target_string + pos;
-            
-                i--;    
-                tail--; 
-            } else {
-                longest_prefix_suffix_array[i] = 0;
-            }
-        }
-        tail++;
+    if (!file) {
+        cerr << "Error: the file couldn't be opened.\n";
+        return false;
     }
-
-    #ifdef DEBUG
-        cout<<"LPS: [ ";
-        for(int i = 0; i < len; i++){
-            cout<<longest_prefix_suffix_array[i];
-            if(i != len - 1) 
-                cout<<", ";
-        }
-
-            cout<<"]"<<endl;
-    #endif 
-
-}
-    */
-
-__global__ void parallelStringSearch(){//char* file_buffer, char* target_string, unsigned int* target_string_len, unsigned int* occurrences){
-
-    int id = threadIdx.x + blockDim.x * blockIdx.x;
     
-    extern __shared__ char shared_buffer[];
-
+    file_buffer = new char[file_size];
+    
+    // we read one file block at the time, due to windows file size constraints
+    
+    std::uintmax_t bytes_left = file_size;
+    char* buffer_offset = file_buffer;
+    
+    while(bytes_left){
+        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
+        
+        file.read(buffer_offset, bytes_to_read);
+        
+        if(file.gcount() <= 0 || file.gcount() != bytes_to_read){
+            cout <<"Error in file.read()"<< endl;
+            delete[] file_buffer;   
+            return false;
+        }
+        
+        buffer_offset += bytes_to_read;
+        bytes_left -= bytes_to_read;
+    }
+    
+    file.close();
+    
+    return true;
 }
 
+void gpuMemoryInit(){
+
+    int target_string_len = strlen(target_string);
+    
+    // global memory allocation
+    cudaMalloc((void **) &d_file_buffer, file_size);
+    cudaMalloc((void **) &d_occurrences, sizeof(unsigned int));
+
+    // the file is copied from RAM to VRAM
+    cudaMemcpy((void *)d_file_buffer, file_buffer, file_size, cudaMemcpyHostToDevice);
+
+    // read-only values are copied into the read-only memory
+    cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
+    cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
+
+    // is this implementation-specific?
+    //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
+
+    // d_occurrences is set to 0
+    cudaMemset((void *)d_occurrences, 0, sizeof(unsigned int));
+
+}
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 2) {
-        cout << "Insert the target string and (optional) a file limit expressed in MBs." << endl;
+    if (argc < MIN_INPUTS) {
+        cout << "Insert the target string, the number of threads per block and (optional) a file limit expressed in MBs." << endl;
         return 1;
     }
 
-    std::uintmax_t file_size;
+    target_string = argv[TARGET_STRING]; //word to compare, taken from terminal
+    threadsPerBlock = std::strtoull(argv[THREADS_PER_BLOCK], nullptr, 10); //number of threads per block, taken from terminal  
 
-    char* target_string;
-
-    //int* longest_prefix_suffix_array;
-
-    target_string = argv[1]; //word to compare, taken from terminal
-    //num_threads = stoi(argv[2]); //number of threads, taken from terminal  
-
+    if((threadsPerBlock & (32 - 1)) != 0){
+        cout << "threadsPerBlock is not multiple of 32! Aborting..." << endl;
+        return -1;
+    }
 
     try {
+
         file_size = fs::file_size(FILE_PATH);
 
     } catch (const fs::filesystem_error& e) {
@@ -122,8 +92,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if(argc > 2){
-        std::uintmax_t file_limit = std::strtoull(argv[3], nullptr, 10)*1024*1024;
+    if(argc > MIN_INPUTS){
+        std::uintmax_t file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
         file_size = (file_limit < file_size)? file_limit : file_size;
     }
 
@@ -135,85 +105,44 @@ int main(int argc, char* argv[]) {
     
     #endif
 
-    //chunk_size = file_size / num_threads; //static chunk size for each thread
 
-    std::ifstream file(FILE_PATH, std::ios::binary);
-    
-    if (!file) {
-        cerr << "Error: the file couldn't be opened.\n";
-        return 1;
+    if(!read_file_from_disk()){
+        return -1;
     }
 
-    char* file_buffer = new char[file_size];
-    char* end_of_file = file_buffer + file_size + 1;
+    // we allocate and load all values into VRAM
+    gpuMemoryInit();
 
-    int target_string_len = strlen(target_string);
-
-    cudaMalloc((void **) d_file_buffer, file_size);
-    cudaMalloc((void **) d_occurrences, sizeof(unsigned int));
-    
-    unsigned long long threadsPerBlock = 128;
-    unsigned long long blocksPerGrid = (file_size - target_string_len + 1) / threadsPerBlock;
-
-    size_t shared_memory_size = threadsPerBlock + target_string_len - 1; 
-
-
-
-    // we read one file block at the time, due to windows file size constraints
-    std::uintmax_t bytes_left = file_size;
-    char* buffer_offset = file_buffer;
-
-    while(bytes_left){
-        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
-
-        file.read(buffer_offset, bytes_to_read);
-        if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
-            cout <<"Error in file.read()"<< endl;
-            delete[] file_buffer;
-            return 0;
-        }
-        buffer_offset += bytes_to_read;
-        bytes_left -= bytes_to_read;
-    }
-
-    cudaMemcpy((void *)d_file_buffer,file_buffer,file_size,cudaMemcpyHostToDevice);
-    cudaMemcpy((void *)d_target_string,target_string,target_string_len,cudaMemcpyHostToDevice);
-
-    cudaMemset((void *)d_occurrences,0,sizeof(unsigned int));
-
-
-    // we build the lps array, used by the kmp string match algorythm
-    //longest_prefix_suffix_array = new int[target_string_len];
-    //build_table(target_string, target_string_len, longest_prefix_suffix_array);
+    // threads and shared memory are managed depending on the implementation
+    implementationDependantManagement();
 
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     
-    parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(); //DA CAMBIARE
-    
+    parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
+    cudaDeviceSynchronize();
+
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
 
-    unsigned int occurrences;
-
-    cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned int), cudaMemcpyDeviceToHost);
-    
     #ifdef DEBUG
+        unsigned int occurrences;
+
+        cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned int), cudaMemcpyDeviceToHost);
+    
         cout<<"Occurrences: "<< occurrences <<endl;
         cout<<"Total duration: " << duration.count() / (double) 1000 << " s | Throughput: ";
     
+        cudaFree((void*)d_occurrences);
     #endif
     
     cout << ((double)file_size / duration.count())* 1000 << endl;
 
-    //end of file
-    //delete[] longest_prefix_suffix_array;
+
+    delete[] longest_prefix_suffix_array;
     delete[] file_buffer;
 
     cudaFree((void*)d_file_buffer);
-    cudaFree((void*)d_target_sting_len);
-    cudaFree((void*)d_occurrences);
-    cudaFree((void*)d_target_string);
     
     return 0;
     

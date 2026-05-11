@@ -15,12 +15,19 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
-//#include <windows.h>
 
 #define FILE_PATH "giant_file.txt"
+#define MIN_INPUTS 3
 
 using namespace std;
 namespace fs = filesystem;
+
+enum {
+    EXE_NAME,
+    TARGET_STRING,
+    NUM_THREADS,
+    FILE_LIMIT
+};
 
 char* file_buffer;
 char* end_of_file;

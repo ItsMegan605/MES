@@ -16,6 +16,8 @@ void debug_print(int thread_index, chrono::steady_clock::time_point start, unsig
 
 void build_table(int len){
 
+    longest_prefix_suffix_array = new int[len];
+
     char * head, *tail;
     head = tail = target_string;
     
@@ -33,7 +35,7 @@ void build_table(int len){
             head++;
         }else{
             if (pos != 0) {
-                // Retrocediamo all'ultimo prefisso valido
+                // we go back to the first valid prefix
                 pos = longest_prefix_suffix_array[pos - 1];
                 head = target_string + pos;
             
@@ -60,6 +62,44 @@ void build_table(int len){
 }
 
 
+
+bool read_file_from_disk(){
+    
+    std::ifstream file(FILE_PATH, std::ios::binary);
+    
+    if (!file) {
+        cerr << "Error: the file couldn't be opened.\n";
+        return false;
+    }
+    
+    file_buffer = new char[file_size];
+    end_of_file = file_buffer + file_size + 1;
+    
+    // we read one file block at the time, due to windows file size constraints
+    
+    std::uintmax_t bytes_left = file_size;
+    char* buffer_offset = file_buffer;
+    
+    while(bytes_left){
+        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
+        
+        file.read(buffer_offset, bytes_to_read);
+        
+        if(file.gcount() <= 0 || file.gcount() != bytes_to_read){
+            cout <<"Error in file.read()"<< endl;
+            delete[] file_buffer;   
+            return false;
+        }
+        
+        buffer_offset += bytes_to_read;
+        bytes_left -= bytes_to_read;
+    }
+    
+    file.close();
+    
+    return true;
+}
+
 //creation and thread waiting
 void parallelStringSearch(int num_threads) {
 
@@ -84,13 +124,13 @@ void parallelStringSearch(int num_threads) {
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 3) {
+    if (argc < MIN_INPUTS) {
         cout << "Insert the target string and the number of threads as arguments, and (optional) a file limit expressed in MBs." << endl;
         return 1;
     }
 
-    target_string = argv[1]; //word to compare, taken from terminal
-    num_threads = stoi(argv[2]); //number of threads, taken from terminal  
+    target_string = argv[TARGET_STRING]; //word to compare, taken from terminal
+    num_threads = stoi(argv[NUM_THREADS]); //number of threads, taken from terminal  
 
     try {
         file_size = fs::file_size(FILE_PATH);
@@ -101,43 +141,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if(argc > 3){
-        std::uintmax_t file_limit = std::strtoull(argv[3], nullptr, 10)*1024*1024;
+    if(argc > MIN_INPUTS){ // if specified, the file size is limited to this value
+        std::uintmax_t file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
         file_size = (file_limit < file_size)? file_limit : file_size;
     }
 
     chunk_size = file_size / num_threads; //static chunk size for each thread
 
-    std::ifstream file(FILE_PATH, std::ios::binary);
-    
-    if (!file) {
-        cerr << "Error: the file couldn't be opened.\n";
-        return 1;
-    }
-    file_buffer = new char[file_size];
-    end_of_file = file_buffer + file_size + 1;
-
-    // we read one file block at the time, due to windows file size constraints
-    std::uintmax_t bytes_left = file_size;
-    char* buffer_offset = file_buffer;
-
-    while(bytes_left){
-        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
-
-        file.read(buffer_offset, bytes_to_read);
-        if(file.gcount() <= 0 || file.gcount() != bytes_to_read) {
-            cout <<"Error in file.read()"<< endl;
-            delete[] file_buffer;
-            return 0;
-        }
-        buffer_offset += bytes_to_read;
-        bytes_left -= bytes_to_read;
+    if(!read_file_from_disk()){
+        return -1;
     }
 
     // we build the lps array, used by the kmp string match algorythm
-    int target_string_len = strlen(target_string); 
-    longest_prefix_suffix_array = new int[target_string_len];
-    build_table(target_string_len);
+    build_table(strlen(target_string));
 
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     
