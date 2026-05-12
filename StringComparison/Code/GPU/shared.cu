@@ -3,7 +3,7 @@
 // this file contains the code shared between all versions. implementation-specific
 // functions will be declared here, and defined in the respective files
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrences);
+__global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences);
 
 void implementationDependantManagement();
 
@@ -50,12 +50,29 @@ void gpuMemoryInit(){
     
     // global memory allocation
     cudaMalloc((void **) &d_file_buffer, file_size);
-    cudaMalloc((void **) &d_occurrences, sizeof(unsigned int));
+    cudaMalloc((void **) &d_occurrences, sizeof(unsigned long long));
+
+    #ifdef DEBUG
+
+        chrono::steady_clock::time_point start = chrono::steady_clock::now();
+
+    #endif
 
     // the file is copied from RAM to VRAM
     cudaMemcpy((void *)d_file_buffer, file_buffer, file_size, cudaMemcpyHostToDevice);
 
+    #ifdef DEBUG
+        
+        chrono::steady_clock::time_point end = chrono::steady_clock::now();
+
+        chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+
+        cout << "File loaded in VRAM in: "<< duration.count() / (double) 1000 << " s"<<endl;
+
+    #endif
+
     // read-only values are copied into the read-only memory
+    cudaMemcpyToSymbol(d_file_size, &file_size, sizeof(unsigned long long));
     cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
     cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
@@ -63,7 +80,7 @@ void gpuMemoryInit(){
     //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
 
     // d_occurrences is set to 0
-    cudaMemset((void *)d_occurrences, 0, sizeof(unsigned int));
+    cudaMemset((void *)d_occurrences, 0, sizeof(unsigned long long));
 
 }
 
@@ -126,9 +143,9 @@ int main(int argc, char* argv[]) {
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
 
     #ifdef DEBUG
-        unsigned int occurrences;
+        unsigned long long occurrences;
 
-        cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned int), cudaMemcpyDeviceToHost);
+        cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned long long), cudaMemcpyDeviceToHost);
     
         cout<<"Occurrences: "<< occurrences <<endl;
         cout<<"Total duration: " << duration.count() / (double) 1000 << " s | Throughput: ";

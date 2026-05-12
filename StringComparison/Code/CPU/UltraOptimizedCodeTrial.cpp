@@ -20,7 +20,7 @@ void findStringIstance(int thread_index, int){
 
     int target_string_length = strlen(target_string);
 
-    unsigned long target_index = 0, candidate_index = current_chunk_start;
+    unsigned long long target_index = 0, candidate_index = current_chunk_start;
     int local_occurrences = 0;
 
     int extra_search_field = (file_size - current_chunk_start < CHUNK_SIZE) ? 0 : target_string_length - 1;

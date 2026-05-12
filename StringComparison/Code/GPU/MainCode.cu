@@ -18,7 +18,7 @@ void implementationDependantManagement(){
 
 
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrences){
+__global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences){
 
     unsigned long long global_id = threadIdx.x + (unsigned long long)blockDim.x * blockIdx.x;
     int block_pos = threadIdx.x;
@@ -32,43 +32,27 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrence
     // unsigned int target_len = d_target_string_len;
     // magari fai la stessa cosa anche per d_totalThreads
 
-    // ATTENZIONE! qua abbiamo un problema! i thread che hanno
-    // global id troppo alto, non fanno questo if, MA VANNO
-    // COMUNQUE AVANTI!!! GRAVE ERRORE, ACCESSI OUT OF BOUNDS!
-    // farli terminare prima, ma gestire anche il prelievo del file!!
-    /*
-        // soluzione mia:
-        if(global_id < d_totalThreads + target_len - 1){
-            // lettura... (in parallelo, con thread in eccesso di aiuto)
-        }  
-        __syncthreads();
 
-        // imperativo terminare dopo la syncthreads, per
-        // prevenire deadlock!! USARE MEGA IF!
-        if(global_id >= d_totalThreads)
-            return;
-
-    */
-
-
-    if(global_id < d_totalThreads)
+    if(global_id < d_totalThreads + d_target_string_len - 1)
         shared_buffer[block_pos] = file_buffer[global_id];
 
     // gestire caso stringa_len - 1 > blocco ma stica
-    if(block_pos < d_target_string_len - 1)
+    if((block_pos < d_target_string_len - 1)  && (global_id + block_size < d_file_size))
         shared_buffer[block_size + block_pos] = file_buffer[block_size + global_id];
 
     __syncthreads();
 
+    if(global_id >= d_totalThreads)
+        return;
+
     int i = 0;
     for(; i < d_target_string_len; i++){
         if(d_target_string[i] != shared_buffer[block_pos + i])
-            break;
+        break;
     }
     
-
     if(i == d_target_string_len)
-        atomicAdd(occurrences, 1);
+        atomicAdd(occurrences,1);
 
 }
 

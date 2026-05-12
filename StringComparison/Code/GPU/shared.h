@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
-
 // This file contains all global variables and constants, both for normal and optimized version of the application
 
 
@@ -56,9 +55,11 @@ size_t shared_memory_size;
 
 // Global memory GPU pointers
 char* d_file_buffer;
-unsigned int* d_occurrences;
+unsigned long long* d_occurrences;
 
 // read-only GPU pointers
+__constant__ unsigned long long d_file_size;
+
 __constant__ char d_target_string[MAX_TARGET_STR];
 __constant__ unsigned int d_target_string_len;
 

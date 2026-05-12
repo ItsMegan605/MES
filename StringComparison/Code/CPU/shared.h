@@ -3,7 +3,7 @@
 
 // This file contains all global variables and constants, both for normal and optimized version of the application
 
-// #define DEBUG // uncomment for debug output
+#define DEBUG // uncomment for debug output
 
 #include <iostream>
 #include <string>

@@ -22,7 +22,7 @@ unsigned long checkString(char* candidate_match, char* target, int target_len){
 //functon executed by every thread, analyzes a chunk of the file and counts the occurrences 
 void findStringIstance(int thread_index, int remainder){
 
-    unsigned long file_position = thread_index * chunk_size;
+    unsigned long long file_position = thread_index * chunk_size;
     
     #ifdef DEBUG
     
@@ -32,7 +32,7 @@ void findStringIstance(int thread_index, int remainder){
     #endif
     int target_len = strlen(target_string);
     
-    for(unsigned long i = 0; i < chunk_size + remainder; i++){
+    for(unsigned long long i = 0; i < chunk_size + remainder; i++){
         
         if(checkString(&file_buffer[file_position], target_string,target_len) == target_len){
             
