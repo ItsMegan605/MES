@@ -17,13 +17,13 @@
 #include <cuda_runtime.h>
 
 // This file contains all global variables and constants, both for normal and optimized version of the application
-
-
 #define FILE_PATH "../CPU/giant_file.txt"
 #define MIN_INPUTS 3
 
 #define MAX_VRAM (unsigned long long)8000*1024*1024 // in MByte
 #define MAX_TARGET_STR 256
+
+#define WARP_SIZE 32
 
 using namespace std;
 namespace fs = std::filesystem;

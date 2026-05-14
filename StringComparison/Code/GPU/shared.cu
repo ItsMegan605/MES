@@ -49,7 +49,7 @@ void gpuMemoryInit(){
     int target_string_len = strlen(target_string);
     
     // global memory allocation
-    cudaMalloc((void **) &d_file_buffer, file_size);
+    cudaMalloc((void **) &d_file_buffer, (file_size + 8) & ~7);
     cudaMalloc((void **) &d_occurrences, sizeof(unsigned long long));
 
     #ifdef DEBUG
@@ -88,13 +88,13 @@ int main(int argc, char* argv[]) {
 
     if (argc < MIN_INPUTS) {
         cout << "Insert the target string, the number of threads per block and (optional) a file limit expressed in MBs." << endl;
-        return 1;
+        return 1; 
     }
 
     target_string = argv[TARGET_STRING]; //word to compare, taken from terminal
     threadsPerBlock = std::strtoull(argv[THREADS_PER_BLOCK], nullptr, 10); //number of threads per block, taken from terminal  
 
-    if((threadsPerBlock & (32 - 1)) != 0){
+    if((threadsPerBlock & (WARP_SIZE - 1)) != 0){
         cout << "threadsPerBlock is not multiple of 32! Aborting..." << endl;
         return -1;
     }
