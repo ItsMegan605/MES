@@ -7,6 +7,11 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
 
 void implementationDependantManagement();
 
+template <typename T>
+__host__ __device__ inline T roundToEight(T value){
+    return (value + 7) & ~ (T)7;
+}
+
 
 bool read_file_from_disk(){
     
@@ -49,7 +54,7 @@ void gpuMemoryInit(){
     int target_string_len = strlen(target_string);
     
     // global memory allocation
-    cudaMalloc((void **) &d_file_buffer, (file_size + 8) & ~7);
+    cudaMalloc((void **) &d_file_buffer, roundToEight(file_size));
     cudaMalloc((void **) &d_occurrences, sizeof(unsigned long long));
 
     #ifdef DEBUG
@@ -155,9 +160,10 @@ int main(int argc, char* argv[]) {
     
     cout << ((double)file_size / duration.count())* 1000 << endl;
 
-
-    delete[] longest_prefix_suffix_array;
     delete[] file_buffer;
+
+    if(longest_prefix_suffix_array)
+        delete[] longest_prefix_suffix_array;
 
     cudaFree((void*)d_file_buffer);
     

@@ -13,7 +13,7 @@ void implementationDependantManagement(){
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceId);
 
-    shared_memory_size = ((threadsPerBlock + target_string_len - 1) + 8) & ~7;
+    shared_memory_size = roundToEight(threadsPerBlock + target_string_len - 1);
 
     // Chiediamo a CUDA: "Dato il mio threadsPerBlock, quanti blocchi posso 
     // mettere al massimo in un singolo Streaming Multiprocessor (SM)?"
@@ -40,8 +40,10 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
 
     unsigned long long block_start = (unsigned long long)blockDim.x * blockIdx.x;
     unsigned long long global_id = threadIdx.x + block_start;
-    int block_pos = threadIdx.x;
-    int block_size = blockDim.x;
+
+    unsigned int block_pos = threadIdx.x;
+    unsigned int block_size = blockDim.x;
+
     unsigned long long stride = (unsigned long long)blockDim.x * gridDim.x;
     
     unsigned long long my_occurrences = 0;
@@ -51,34 +53,33 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
     extern __shared__ char shared_buffer[];
 
     __shared__ unsigned long long shared_occurrences;
+
+    if(block_pos == 0)
+        shared_occurrences = 0;
     
     unsigned long long * shared_buffer_long = (unsigned long long*)shared_buffer;
 
-    int numPrelievi = ((block_size + d_target_string_len -1 + 8) & ~7) / 8;
-
+    unsigned int numPrelievi = roundToEight(block_size + d_target_string_len -1)/8;
+    unsigned int prelieviLeft;
+    unsigned int thisPrelievi;
 
     for(unsigned long long k = global_id, blk = block_start; blk < d_file_size ; k += stride, blk += stride){
-        /*
-        if(k < d_file_size){
 
-            shared_buffer[block_pos] = file_buffer[k];
-            
-            // gestire caso stringa_len - 1 > blocco ma stica
-            if((block_pos < d_target_string_len - 1)  && (k + block_size < d_file_size))
-                shared_buffer[block_size + block_pos] = file_buffer[block_size + k];
+        // gestire caso stringa lunga o blocco piccolo
+        prelieviLeft = roundToEight(d_file_size - blk)/8;
+        
+        thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
+        if(block_pos < thisPrelievi){
+                shared_buffer_long[block_pos] = *(((unsigned long long*)(file_buffer + blk)) + block_pos);
         }
-                */
 
-                // gestire caso stringa lunga o blocco piccolo
-       if(block_pos < numPrelievi){
-            shared_buffer_long[block_pos] = *(((unsigned long long*)&file_buffer[block_start]) + (8*block_pos));
-       }
-
+        // GEMINI DICE: abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo
+        // un 2 way conflict, inoltre controlliamo 4 byte per volta
 
         __syncthreads();
         
         if(k < workingThreads){
-            int i = 0;
+            unsigned int i = 0;
             for(; i < d_target_string_len; i++){
                 if(d_target_string[i] != shared_buffer[block_pos + i])
                 break;

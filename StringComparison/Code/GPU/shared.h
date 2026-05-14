@@ -46,7 +46,7 @@ std::uintmax_t file_size;
 char* target_string;
 
 // kmp
-int* longest_prefix_suffix_array;
+int* longest_prefix_suffix_array = nullptr;
 
 // ==================== GPU ===========================
 
