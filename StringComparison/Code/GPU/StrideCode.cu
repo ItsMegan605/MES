@@ -1,7 +1,7 @@
 #include "shared.h"
 #include "shared.cu"
 
-
+//NB: le var con d sono la "copia" dei parametri CPU
 
 void implementationDependantManagement(){
 
@@ -38,16 +38,16 @@ void implementationDependantManagement(){
 
 __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences){
 
-    unsigned long long block_start = (unsigned long long)blockDim.x * blockIdx.x;
-    unsigned long long global_id = threadIdx.x + block_start;
+    unsigned long long block_start = (unsigned long long)blockDim.x * blockIdx.x; //indice di inziio lavoro 
+    unsigned long long global_id = threadIdx.x + block_start; //id dei thread
 
-    unsigned int block_pos = threadIdx.x;
+    unsigned int block_pos = threadIdx.x; //id del thread nel blocco
     unsigned int block_size = blockDim.x;
-
+    //total thread in exe, tutti i thread esistenti per vedere che alti fanno
     unsigned long long stride = (unsigned long long)blockDim.x * gridDim.x;
     
     unsigned long long my_occurrences = 0;
-
+    //max lim di ricerca 
     unsigned long long workingThreads = d_file_size - d_target_string_len + 1;
 
     extern __shared__ char shared_buffer[];
@@ -57,6 +57,7 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
     if(block_pos == 0)
         shared_occurrences = 0;
     
+        //memory coalesced access: dati raggruppaty 8 byte alla volta 
     unsigned long long * shared_buffer_long = (unsigned long long*)shared_buffer;
 
     unsigned int numPrelievi = roundToEight(block_size + d_target_string_len -1)/8;
