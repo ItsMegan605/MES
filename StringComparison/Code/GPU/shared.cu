@@ -8,8 +8,8 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
 void implementationDependantManagement();
 
 template <typename T>
-__host__ __device__ inline T roundToEight(T value){
-    return (value + 7) & ~ (T)7;
+__host__ __device__ inline T roundToFour(T value){
+    return (value + 3) & ~ (T)3;
 }
 
 
@@ -54,7 +54,7 @@ void gpuMemoryInit(){
     int target_string_len = strlen(target_string);
     
     // global memory allocation
-    cudaMalloc((void **) &d_file_buffer, roundToEight(file_size));
+    cudaMalloc((void **) &d_file_buffer, roundToFour(file_size));
     cudaMalloc((void **) &d_occurrences, sizeof(unsigned long long));
 
     #ifdef DEBUG

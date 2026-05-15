@@ -65,6 +65,8 @@ __constant__ unsigned long long d_file_size;
 __constant__ char d_target_string[MAX_TARGET_STR];
 __constant__ unsigned int d_target_string_len;
 
+__constant__ unsigned int d_shared_memory_size;
+
 __constant__ unsigned long long  d_totalThreads; // naive
 
 __constant__ int d_longest_prefix_suffix_array[MAX_TARGET_STR]; //KMP

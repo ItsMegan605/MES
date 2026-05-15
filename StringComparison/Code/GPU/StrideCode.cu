@@ -13,7 +13,7 @@ void implementationDependantManagement(){
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceId);
 
-    shared_memory_size = roundToEight(threadsPerBlock + target_string_len - 1);
+    shared_memory_size = roundToFour(threadsPerBlock + target_string_len - 1);
 
     // Chiediamo a CUDA: "Dato il mio threadsPerBlock, quanti blocchi posso 
     // mettere al massimo in un singolo Streaming Multiprocessor (SM)?"
@@ -33,6 +33,19 @@ void implementationDependantManagement(){
 
     cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
 
+    /*
+    cout << "--- IDENTIKIT HARDWARE DELLA GPU ---" << endl;
+    cout << "Memoria Condivisa Totale per SM: " << props.sharedMemPerMultiprocessor / 1024 << " KB" << endl;
+    cout << "Blocchi per SM: " << numBlocksPerSm << endl;
+    cout << "Memoria Condivisa per Blocco: " << ( props.sharedMemPerMultiprocessor / 1024 ) / numBlocksPerSm<< " KB" << endl;
+    cout << "Memoria Costante Totale: " << props.totalConstMem / 1024 << " KB" << endl;
+    cout << "Memoria Condivisa MAX per singolo Blocco: " << props.sharedMemPerBlock / 1024 << " KB" << endl;
+    cout << "Registri Totali per SM: " << props.regsPerMultiprocessor << endl;
+    cout << "Registri MAX per singolo Blocco: " << props.regsPerBlock << endl;
+    cout << "Numero di SM (Processori): " << props.multiProcessorCount << endl;
+    cout << "------------------------------------" << endl;
+    */
+    
 }
 
 
@@ -58,23 +71,23 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
         shared_occurrences = 0;
     
         //memory coalesced access: dati raggruppaty 8 byte alla volta 
-    unsigned long long * shared_buffer_long = (unsigned long long*)shared_buffer;
+    unsigned int * shared_buffer_long = (unsigned int*)shared_buffer;
 
-    unsigned int numPrelievi = roundToEight(block_size + d_target_string_len -1)/8;
+    unsigned int numPrelievi = roundToFour(block_size + d_target_string_len -1)/4;
     unsigned int prelieviLeft;
     unsigned int thisPrelievi;
 
     for(unsigned long long k = global_id, blk = block_start; blk < d_file_size ; k += stride, blk += stride){
 
         // gestire caso stringa lunga o blocco piccolo
-        prelieviLeft = roundToEight(d_file_size - blk)/8;
+        prelieviLeft = roundToFour(d_file_size - blk)/4;
         
         thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
         if(block_pos < thisPrelievi){
-                shared_buffer_long[block_pos] = *(((unsigned long long*)(file_buffer + blk)) + block_pos);
+                shared_buffer_long[block_pos] = *(((unsigned int*)(file_buffer + blk)) + block_pos);
         }
 
-        // GEMINI DICE: abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo
+        // abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo
         // un 2 way conflict, inoltre controlliamo 4 byte per volta
 
         __syncthreads();
