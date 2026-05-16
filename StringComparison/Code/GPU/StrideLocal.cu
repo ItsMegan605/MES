@@ -70,19 +70,21 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
     
     unsigned long long my_occurrences = 0;
     //max lim di ricerca 
-    unsigned long long workingThreads = d_file_size - d_target_string_len + 1;
+    unsigned long long last_int = roundToFour(d_file_size - d_target_string_len + 1);
 
-    const unsigned int numPrelievi = d_shared_memory_size/4;
-
-    for(unsigned long long startPrelievo = d_shared_memory_size * blockIdx.x; startPrelievo < d_file_size; startPrelievo + block_jump){
-
-        // prelievo (che schifo)
-        for(unsigned int pos = startPrelievo + 4*block_pos; pos < d_file_size - 3  ;pos += block_size*4){
-            *(int*)(&shared_buffer[pos]) = ((int*)file_buffer[block_start])[pos];
-
+    for(unsigned long long startPrelievo = d_shared_memory_size * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
+        
+        // fare che il prelievo sia a multipli di shared memory risparmiandoci un if
+        unsigned long long limPrelievo = ((d_shared_memory_size < d_file_size - startPrelievo ) ? shared_memory_size : d_file_size - startPrelievo);
+        for(unsigned long long thisPrelievo = block_pos * 4; thisPrelievo + 3 < limPrelievo; thisPrelievo += block_size * 4){
+            *((int*)(&shared_buffer[thisPrelievo])) = *((int*)(&file_buffer[startPrelievo + thisPrelievo]));
         }
 
+        __syncthreads();
 
+        /// work in progress
+
+        __syncthreads();
     }
 
     //usare shared buffer per salvare le occorrenze shared
