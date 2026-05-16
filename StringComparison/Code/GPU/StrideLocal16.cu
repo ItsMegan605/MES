@@ -1,6 +1,9 @@
 #include "shared.h"
 #include "shared.cu"
 
+#define TIPO _Big_uint128
+#define EXP 4
+
 //NB: le var con d sono la "copia" dei parametri CPU
 
 void implementationDependantManagement(){
@@ -45,7 +48,8 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     
     // Step calcolato per creare sovrapposizione tra i blocchi e non perdere
     // le parole che cadono a cavallo tra un chunk e l'altro.
-    const u64 chunk_step = d_shared_memory_size - d_target_string_len + 1;
+    const u32 overlap = roundToSixteen(d_target_string_len - 1);
+    const u64 chunk_step = d_shared_memory_size - overlap;
     const u64 block_jump = chunk_step * gridDim.x;
     
     u64 my_occurrences = 0;
@@ -53,28 +57,31 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     for(u64 startPrelievo = chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
         
         // Evitiamo di leggere oltre la fine del file
-        u64 limPrelievo = d_shared_memory_size;
+        u64 limPrelievo = d_shared_memory_size; //vedo i byte ancora da trasf
         if(startPrelievo + limPrelievo > d_file_size) {
             limPrelievo = d_file_size - startPrelievo;
         }
 
-        // Si fa byte per byte. Niente cast a (int*). Evita l'Unaligned Memory Fault
-        // che ti faceva crashare il kernel e restituiva 0.
+        limPrelievo >>= EXP;
+
+        // gli accessi saranno sempre allineati a 4, qui cerco interi
         for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += block_size){
-            shared_buffer[thisPrelievo] = file_buffer[startPrelievo + thisPrelievo];
+            ((TIPO*)shared_buffer)[thisPrelievo] = ((TIPO*)file_buffer)[(startPrelievo >> EXP) + thisPrelievo];
         }
 
         __syncthreads();
 
-        if(limPrelievo >= d_target_string_len) {
-            for(u64 startSearch = block_pos; startSearch <= limPrelievo - d_target_string_len; startSearch += block_size){
+        limPrelievo <<= EXP; 
+        if(limPrelievo >= d_target_string_len){
+            
+            for(u64 startSearch = block_pos; startSearch <= limPrelievo - overlap - 1; startSearch += block_size){
                 int i = 0;
-                for(; i < d_target_string_len ; i++){
+                for(; i < d_target_string_len ; i++){ //confronto per la string
                     if(shared_buffer[startSearch + i] != d_target_string[i])
                         break; 
                 }
                 if(i == d_target_string_len)
-                    my_occurrences++;
+                    my_occurrences++; // se trovo occorrenza
             }
         }
         

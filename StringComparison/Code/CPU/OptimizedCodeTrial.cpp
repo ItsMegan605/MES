@@ -8,7 +8,7 @@ void findStringIstance(int thread_index, int remainder){
 
     int target_string_length = strlen(target_string);
 
-    unsigned long long target_index = 0, candidate_index = thread_index * chunk_size;
+    u64 target_index = 0, candidate_index = thread_index * chunk_size;
     int local_occurrences = 0;
 
     long long bytes_left = chunk_size + remainder;

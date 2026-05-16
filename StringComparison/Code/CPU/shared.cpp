@@ -4,7 +4,7 @@
 
 void findStringIstance(int, int); // this function will be different depending on which program is run
 
-void debug_print(int thread_index, chrono::steady_clock::time_point start, unsigned int local_occurrences, int chunks_taken = 1){
+void debug_print(int thread_index, chrono::steady_clock::time_point start, u32 local_occurrences, int chunks_taken = 1){
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
@@ -77,11 +77,11 @@ bool read_file_from_disk(){
     
     // we read one file block at the time, due to windows file size constraints
     
-    std::uintmax_t bytes_left = file_size;
+    u64 bytes_left = file_size;
     char* buffer_offset = file_buffer;
     
     while(bytes_left){
-        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
+        u64 bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
         
         file.read(buffer_offset, bytes_to_read);
         
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     }
 
     if(argc > MIN_INPUTS){ // if specified, the file size is limited to this value
-        std::uintmax_t file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
+        u64 file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
         file_size = (file_limit < file_size)? file_limit : file_size;
     }
 

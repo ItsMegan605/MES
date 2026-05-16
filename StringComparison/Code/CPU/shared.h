@@ -22,6 +22,9 @@
 using namespace std;
 namespace fs = filesystem;
 
+typedef unsigned int u32;
+typedef unsigned long long u64;
+
 enum {
     EXE_NAME,
     TARGET_STRING,
@@ -45,16 +48,16 @@ mutex mtx;
 mutex output_mtx;
 
 //windows uses 32 bit values for file reading
-const std::uintmax_t max_read_size = 2000LL* 1024*1024;
+const u64 max_read_size = 2000LL* 1024*1024;
 
-std::uintmax_t file_size;
+u64 file_size;
 
 // static load
-std::uintmax_t chunk_size;
+u64 chunk_size;
 
 // dynamic load
 mutex chunk_mtx;
-const std::uintmax_t CHUNK_SIZE = 5*1024*1024;
-std::uintmax_t next_chunk_size = 0; 
+const u64 CHUNK_SIZE = 5*1024*1024;
+u64 next_chunk_size = 0; 
 
 #endif

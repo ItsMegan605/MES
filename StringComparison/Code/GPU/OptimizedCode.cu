@@ -12,22 +12,22 @@ void implementationDependantManagement(){
 
     shared_memory_size = threadsPerBlock + target_string_len - 1; 
 
-    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
+    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
 
 }
 
 
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences){
+__global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
-    unsigned long long global_id = threadIdx.x + (unsigned long long)blockDim.x * blockIdx.x;
+    u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
     int block_pos = threadIdx.x;
     int block_size = blockDim.x;
 
-    unsigned int target_len = d_target_string_len;
-    unsigned long long totalThreads = d_totalThreads;
+    u32 target_len = d_target_string_len;
+    u64 totalThreads = d_totalThreads;
     
-    __shared__ unsigned long long local_occurrences;
+    __shared__ u64 local_occurrences;
 
     if(block_pos == 0)
         local_occurrences = 0;

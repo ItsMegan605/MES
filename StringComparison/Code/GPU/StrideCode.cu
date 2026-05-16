@@ -31,7 +31,7 @@ void implementationDependantManagement(){
     // totalThreads a questo punto è semplice:
     totalThreads = blocksPerGrid * threadsPerBlock;
 
-    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
+    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
 
     /*
     cout << "--- IDENTIKIT HARDWARE DELLA GPU ---" << endl;
@@ -49,42 +49,42 @@ void implementationDependantManagement(){
 }
 
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences){
+__global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
-    unsigned long long block_start = (unsigned long long)blockDim.x * blockIdx.x; //indice di inziio lavoro 
-    unsigned long long global_id = threadIdx.x + block_start; //id dei thread
+    u64 block_start = (u64)blockDim.x * blockIdx.x; //indice di inziio lavoro 
+    u64 global_id = threadIdx.x + block_start; //id dei thread
 
-    unsigned int block_pos = threadIdx.x; //id del thread nel blocco
-    unsigned int block_size = blockDim.x;
+    u32 block_pos = threadIdx.x; //id del thread nel blocco
+    u32 block_size = blockDim.x;
     //total thread in exe, tutti i thread esistenti per vedere che alti fanno
-    unsigned long long stride = (unsigned long long)blockDim.x * gridDim.x;
+    u64 stride = (u64)blockDim.x * gridDim.x;
     
-    unsigned long long my_occurrences = 0;
+    u64 my_occurrences = 0;
     //max lim di ricerca 
-    unsigned long long workingThreads = d_file_size - d_target_string_len + 1;
+    u64 workingThreads = d_file_size - d_target_string_len + 1;
 
     extern __shared__ char shared_buffer[];
 
-    __shared__ unsigned long long shared_occurrences;
+    __shared__ u64 shared_occurrences;
 
     if(block_pos == 0)
         shared_occurrences = 0;
     
         //memory coalesced access: dati raggruppaty 8 byte alla volta 
-    unsigned int * shared_buffer_long = (unsigned int*)shared_buffer;
+    u32 * shared_buffer_long = (u32*)shared_buffer;
 
-    unsigned int numPrelievi = roundToFour(block_size + d_target_string_len -1)/4;
-    unsigned int prelieviLeft;
-    unsigned int thisPrelievi;
+    u32 numPrelievi = roundToFour(block_size + d_target_string_len -1)/4;
+    u32 prelieviLeft;
+    u32 thisPrelievi;
 
-    for(unsigned long long k = global_id, blk = block_start; blk < d_file_size ; k += stride, blk += stride){
+    for(u64 k = global_id, blk = block_start; blk < d_file_size ; k += stride, blk += stride){
 
         // gestire caso stringa lunga o blocco piccolo
         prelieviLeft = roundToFour(d_file_size - blk)/4;
         
         thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
         if(block_pos < thisPrelievi){
-                shared_buffer_long[block_pos] = *(((unsigned int*)(file_buffer + blk)) + block_pos);
+                shared_buffer_long[block_pos] = *(((u32*)(file_buffer + blk)) + block_pos);
         }
 
         // abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo
@@ -93,7 +93,7 @@ __global__ void parallelStringSearch(char* file_buffer, unsigned long long* occu
         __syncthreads();
         
         if(k < workingThreads){
-            unsigned int i = 0;
+            u32 i = 0;
             for(; i < d_target_string_len; i++){
                 if(d_target_string[i] != shared_buffer[block_pos + i])
                 break;

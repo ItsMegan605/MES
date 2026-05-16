@@ -3,13 +3,23 @@
 // this file contains the code shared between all versions. implementation-specific
 // functions will be declared here, and defined in the respective files
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned long long* occurrences);
+__global__ void parallelStringSearch(char* file_buffer, u64* occurrences);
 
 void implementationDependantManagement();
 
 template <typename T>
 __host__ __device__ inline T roundToFour(T value){
     return (value + 3) & ~ (T)3;
+}
+
+template <typename T>
+__host__ __device__ inline T roundToEight(T value){
+    return (value + 7) & ~ (T)7;
+}
+
+template <typename T>
+__host__ __device__ inline T roundToSixteen(T value){
+    return (value + 15) & ~ (T)15;
 }
 
 
@@ -26,11 +36,11 @@ bool read_file_from_disk(){
     
     // we read one file block at the time, due to windows file size constraints
     
-    std::uintmax_t bytes_left = file_size;
+    u64 bytes_left = file_size;
     char* buffer_offset = file_buffer;
     
     while(bytes_left){
-        std::uintmax_t bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
+        u64 bytes_to_read = (bytes_left > max_read_size) ? max_read_size : bytes_left;
         
         file.read(buffer_offset, bytes_to_read);
         
@@ -54,8 +64,8 @@ void gpuMemoryInit(){
     int target_string_len = strlen(target_string);
     
     // global memory allocation
-    cudaMalloc((void **) &d_file_buffer, roundToFour(file_size));
-    cudaMalloc((void **) &d_occurrences, sizeof(unsigned long long));
+    cudaMalloc((void **) &d_file_buffer, roundToSixteen(file_size)); // in caso da cambiare
+    cudaMalloc((void **) &d_occurrences, sizeof(u64));
 
     #ifdef DEBUG
 
@@ -77,15 +87,15 @@ void gpuMemoryInit(){
     #endif
 
     // read-only values are copied into the read-only memory
-    cudaMemcpyToSymbol(d_file_size, &file_size, sizeof(unsigned long long));
+    cudaMemcpyToSymbol(d_file_size, &file_size, sizeof(u64));
     cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
     cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
     // is this implementation-specific?
-    //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(unsigned long long));
+    //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
 
     // d_occurrences is set to 0
-    cudaMemset((void *)d_occurrences, 0, sizeof(unsigned long long));
+    cudaMemset((void *)d_occurrences, 0, sizeof(u64));
 
 }
 
@@ -115,7 +125,7 @@ int main(int argc, char* argv[]) {
     }
 
     if(argc > MIN_INPUTS){
-        std::uintmax_t file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
+        u64 file_limit = std::strtoull(argv[FILE_LIMIT], nullptr, 10)*1024*1024;
         file_size = (file_limit < file_size)? file_limit : file_size;
     }
 
@@ -148,9 +158,9 @@ int main(int argc, char* argv[]) {
     chrono::milliseconds duration = chrono::duration_cast<chrono::milliseconds>(end - start);
 
     #ifdef DEBUG
-        unsigned long long occurrences;
+        u64 occurrences;
 
-        cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(unsigned long long), cudaMemcpyDeviceToHost);
+        cudaMemcpy((void*)&occurrences, d_occurrences,sizeof(u64), cudaMemcpyDeviceToHost);
     
         cout<<"Occurrences: "<< occurrences <<endl;
         cout<<"Total duration: " << duration.count() / (double) 1000 << " s | Throughput: ";

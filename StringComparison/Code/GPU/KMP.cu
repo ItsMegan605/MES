@@ -62,9 +62,9 @@ void implementationDependantManagement(){
 }
 
 
-__global__ void parallelStringSearch(char* file_buffer, unsigned int* occurrences){
+__global__ void parallelStringSearch(char* file_buffer, u32* occurrences){
 
-    unsigned long long global_id = threadIdx.x + (unsigned long long)blockDim.x * blockIdx.x;
+    u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
     int block_pos = threadIdx.x;
     int block_size = blockDim.x;
     
