@@ -1,8 +1,9 @@
 #include "shared.h"
 #include "shared.cu"
 
-#define TIPO _Big_uint128
+#define TYPE _Big_uint128
 #define EXP 4
+#define ROUND roundToSixteen
 
 //NB: le var con d sono la "copia" dei parametri CPU
 
@@ -48,7 +49,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     
     // Step calcolato per creare sovrapposizione tra i blocchi e non perdere
     // le parole che cadono a cavallo tra un chunk e l'altro.
-    const u32 overlap = roundToSixteen(d_target_string_len - 1);
+    const u32 overlap = ROUND(d_target_string_len - 1);
     const u64 chunk_step = d_shared_memory_size - overlap;
     const u64 block_jump = chunk_step * gridDim.x;
     
@@ -66,7 +67,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
         // gli accessi saranno sempre allineati a 4, qui cerco interi
         for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += block_size){
-            ((TIPO*)shared_buffer)[thisPrelievo] = ((TIPO*)file_buffer)[(startPrelievo >> EXP) + thisPrelievo];
+            ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievo >> EXP) + thisPrelievo];
         }
 
         __syncthreads();

@@ -1,6 +1,10 @@
 #include "shared.h"
 #include "shared.cu"
 
+#define TYPE u64
+#define EXP 3
+#define ROUND roundToEight
+
 //NB: le var con d sono la "copia" dei parametri CPU
 
 void implementationDependantManagement(){
@@ -45,7 +49,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     
     // Step calcolato per creare sovrapposizione tra i blocchi e non perdere
     // le parole che cadono a cavallo tra un chunk e l'altro.
-    const u32 overlap = roundToEight(d_target_string_len - 1);
+    const u32 overlap = ROUND(d_target_string_len - 1);
     const u64 chunk_step = d_shared_memory_size - overlap;
     const u64 block_jump = chunk_step * gridDim.x;
     
@@ -59,16 +63,16 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             limPrelievo = d_file_size - startPrelievo;
         }
 
-        limPrelievo >>= 3;
+        limPrelievo >>= EXP;
 
         // gli accessi saranno sempre allineati a 4, qui cerco interi
         for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += block_size){
-            ((long long*)shared_buffer)[thisPrelievo] = ((long long*)file_buffer)[(startPrelievo >> 3) + thisPrelievo];
+            ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievo >> EXP) + thisPrelievo];
         }
 
         __syncthreads();
 
-        limPrelievo <<= 3; 
+        limPrelievo <<= EXP; 
         if(limPrelievo >= d_target_string_len){
             
             for(u64 startSearch = block_pos; startSearch <= limPrelievo - overlap - 1; startSearch += block_size){

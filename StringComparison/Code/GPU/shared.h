@@ -68,11 +68,12 @@ __constant__ u64 d_file_size;
 __constant__ char d_target_string[MAX_TARGET_STR];
 __constant__ u32 d_target_string_len;
 
-__constant__ u32 d_shared_memory_size;
+__constant__ u64 d_shared_memory_size;
 
 __constant__ u64  d_totalThreads; // naive
 
 __constant__ int d_longest_prefix_suffix_array[MAX_TARGET_STR]; //KMP
+__constant__ u64 d_memory_for_thread;
 
 // thread management
 u64 threadsPerBlock;
