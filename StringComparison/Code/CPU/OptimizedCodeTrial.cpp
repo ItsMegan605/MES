@@ -12,7 +12,7 @@ void findStringIstance(int thread_index, int remainder){
     int local_occurrences = 0;
 
     long long bytes_left = chunk_size + remainder;
-    int extra_search_field = (candidate_index + chunk_size + remainder >= file_size) ? 0 : target_string_length - 1;
+    int extra_search_field = (candidate_index + bytes_left >= file_size) ? 0 : min((u64)(target_string_length -1), file_size - (candidate_index + bytes_left));
 
     #ifdef DEBUG
     

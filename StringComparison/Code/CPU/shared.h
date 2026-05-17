@@ -15,6 +15,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <math.h>
 
 #define FILE_PATH "giant_file.txt"
 #define MIN_INPUTS 3

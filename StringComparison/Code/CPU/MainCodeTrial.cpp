@@ -1,8 +1,7 @@
 #include "shared.h"
 #include "shared.cpp"
 
-//the main is located in the shared.cpp file
-int main(int argc, char* argv[]);
+
 
 //function to chech if the chars match the target word
 //returns the number of chars that match, if it is equal to the length of the target string then we have found an occurrence
@@ -56,3 +55,6 @@ void findStringIstance(int thread_index, int remainder){
     
     #endif
 }
+
+//the main is located in the shared.cpp file
+int main(int argc, char* argv[]);

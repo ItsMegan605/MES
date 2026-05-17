@@ -6,7 +6,7 @@ void implementationDependantManagement(){
 
     int target_string_len = strlen(target_string);
 
-    totalThreads = file_size - target_string_len + 1;
+    u64 totalThreads = file_size - target_string_len + 1;
 
     blocksPerGrid = totalThreads / threadsPerBlock + ((totalThreads % threadsPerBlock > 0) ? 1: 0);
 
@@ -23,15 +23,10 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
     int block_pos = threadIdx.x;
     int block_size = blockDim.x;
+
+    // provare a mettere variabili read only nei registri?
     
     extern __shared__ char shared_buffer[];
-
-    // ottimizzazione possibile: 
-    // ci salviamo strlen in un registro, invece che
-    // accedere sempre alla memoria read only
-    // u32 target_len = d_target_string_len;
-    // magari fai la stessa cosa anche per d_totalThreads
-
 
     if(global_id < d_totalThreads + d_target_string_len - 1)
         shared_buffer[block_pos] = file_buffer[global_id];

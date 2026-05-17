@@ -91,8 +91,6 @@ void gpuMemoryInit(){
     cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
     cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
-    // is this implementation-specific?
-    //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
 
     // d_occurrences is set to 0
     cudaMemset((void *)d_occurrences, 0, sizeof(u64));

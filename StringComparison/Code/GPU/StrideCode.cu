@@ -28,10 +28,10 @@ void implementationDependantManagement(){
     // Calcoliamo la griglia totale moltiplicando i blocchi per SM per il numero di SM
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
 
-    // totalThreads a questo punto è semplice:
-    totalThreads = blocksPerGrid * threadsPerBlock;
+    // limite della ricerca
+    const u64 workingThreads = d_file_size - d_target_string_len + 1;
 
-    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
+    cudaMemcpyToSymbol(d_totalThreads, &workingThreads, sizeof(u64)); //CHECK
 
     /*
     cout << "--- IDENTIKIT HARDWARE DELLA GPU ---" << endl;
@@ -51,17 +51,15 @@ void implementationDependantManagement(){
 
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
-    u64 block_start = (u64)blockDim.x * blockIdx.x; //indice di inziio lavoro 
-    u64 global_id = threadIdx.x + block_start; //id dei thread
+    const u64 block_start = (u64)blockDim.x * blockIdx.x; //indice di inziio lavoro 
+    const u64 global_id = threadIdx.x + block_start; //id dei thread
 
     u32 block_pos = threadIdx.x; //id del thread nel blocco
-    u32 block_size = blockDim.x;
+
     //total thread in exe, tutti i thread esistenti per vedere che alti fanno
-    u64 stride = (u64)blockDim.x * gridDim.x;
+    const u64 stride = (u64)blockDim.x * gridDim.x;
     
     u64 my_occurrences = 0;
-    //max lim di ricerca 
-    u64 workingThreads = d_file_size - d_target_string_len + 1;
 
     extern __shared__ char shared_buffer[];
 
@@ -73,7 +71,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         //memory coalesced access: dati raggruppaty 8 byte alla volta 
     u32 * shared_buffer_long = (u32*)shared_buffer;
 
-    u32 numPrelievi = roundToFour(block_size + d_target_string_len -1)/4;
+    u32 numPrelievi = roundToFour(blockDim.x + d_target_string_len -1)/4;
     u32 prelieviLeft;
     u32 thisPrelievi;
 
@@ -92,7 +90,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
         __syncthreads();
         
-        if(k < workingThreads){
+        if(k < d_totalThreads){
             u32 i = 0;
             for(; i < d_target_string_len; i++){
                 if(d_target_string[i] != shared_buffer[block_pos + i])

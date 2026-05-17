@@ -33,10 +33,10 @@ void implementationDependantManagement(){
             
     // Calcoliamo la griglia totale
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
-    totalThreads = blocksPerGrid * threadsPerBlock;
+    //u64 totalThreads = blocksPerGrid * threadsPerBlock;
 
-    cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
-    cudaMemcpyToSymbol(d_shared_memory_size, &shared_memory_size, sizeof(u32));
+    //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
+    cudaMemcpyToSymbol(d_shared_memory_size, &shared_memory_size, sizeof(u64));
 }
 
 

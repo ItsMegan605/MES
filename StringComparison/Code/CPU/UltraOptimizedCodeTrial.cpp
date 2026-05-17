@@ -23,7 +23,7 @@ void findStringIstance(int thread_index, int){
     u64 target_index = 0, candidate_index = current_chunk_start;
     int local_occurrences = 0;
 
-    int extra_search_field = (file_size - current_chunk_start < CHUNK_SIZE) ? 0 : target_string_length - 1;
+    int extra_search_field = (file_size - current_chunk_start < CHUNK_SIZE) ? 0 : min((u64)(target_string_length -1), file_size - (candidate_index + bytes_left));
     
     #ifdef DEBUG
     
