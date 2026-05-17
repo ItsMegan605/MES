@@ -11,7 +11,6 @@ void build_table(int len){
     
     longest_prefix_suffix_array[0]=0; // the first element is always 0, therefore ...
     tail++; // ... we start from the second element
-    
     int pos = 0;
 
     for(int i = 1; i < len; i++){
@@ -98,9 +97,9 @@ void implementationDependantManagement(){
 }
 
 
-__global__ void parallelStringSearch(char* file_buffer, u32* occurrences){
+__global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
-    const u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
+    //const u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
     
     extern __shared__ char shared_buffer[];
 
@@ -159,18 +158,18 @@ __global__ void parallelStringSearch(char* file_buffer, u32* occurrences){
                         break;
                 }
                 
-                if(target_string[target_index] == file_buffer[candidate_index]){
+                if(d_target_string[target_index] == file_buffer[candidate_index]){
                     target_index++;
                     candidate_index++;
                     bytes_left--;
                     
                     if(target_index == d_target_string_len){
                         my_occurrences++;
-                        target_index = longest_prefix_suffix_array[target_index - 1];
+                        target_index = d_longest_prefix_suffix_array[target_index - 1];
                     }
                 }else{
                     if(target_index != 0)
-                        target_index = longest_prefix_suffix_array[target_index - 1];
+                        target_index = d_longest_prefix_suffix_array[target_index - 1];
                     else{
                         candidate_index++;
                         bytes_left--;
