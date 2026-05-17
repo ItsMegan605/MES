@@ -2,7 +2,6 @@
 #include "shared.cpp"
 
 //the main is located in the shared.cpp file
-int main(int argc, char* argv[]);
 
 void findStringIstance(int thread_index, int remainder){
 

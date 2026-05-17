@@ -3,7 +3,7 @@
 
 
 //the main is located in the shared.cpp file
-int main(int argc, char* argv[]);
+
 
 uintmax_t getNewChunk(){
     lock_guard<mutex> lk(chunk_mtx);
