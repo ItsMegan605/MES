@@ -79,12 +79,17 @@ void implementationDependantManagement(){
     // Calcoliamo la griglia totale
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
     //u64 totalThreads = blocksPerGrid * threadsPerBlock;
-
-    // memory for each thread
-    const u64 memory_for_thread = shared_memory_size / threadsPerBlock;
-    cout << "Memoria per singolo thread: " << memory_for_thread << " KB" << endl;
+    
 
     const u64 chunk_step = shared_memory_size - target_string_len + 1;
+    
+    // GEMINI: Dividiamo solo lo spazio utile (chunk_step) tra i thread
+    const u64 memory_for_thread = (chunk_step + threadsPerBlock - 1) / threadsPerBlock;
+
+    // memory for each thread (sbagliato perche ragioniamo in chunk non in shared memory)
+    //const u64 memory_for_thread = shared_memory_size / threadsPerBlock;
+    
+    cout << "Memoria per singolo thread: " << memory_for_thread << " B" << endl;
 
 
     cudaMemcpyToSymbol(d_memory_for_thread, &memory_for_thread, sizeof(u64));
@@ -111,16 +116,17 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     
     u64 my_occurrences = 0;
 
-    const u32 last_shared = (d_file_size / d_shared_memory_size) - 1 + ((d_file_size % d_shared_memory_size > 0)) ? 1 : 0;
-    u32 current_shared = blockIdx.x;
+    // problema: current shared va a dimensione di memoria shared,
+    //const u32 last_shared = (d_file_size / d_shared_memory_size) - 1 + (((d_file_size % d_shared_memory_size > 0)) ? 1 : 0);
+    //u32 current_shared = blockIdx.x;
 
 
-    for(u64 startPrelievo = d_chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump, current_shared += gridDim.x){
+    for(u64 startPrelievo = d_chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
 
         
         // Evitiamo di leggere oltre la fine del file
         u64 limPrelievo = d_shared_memory_size;
-        if(current_shared == last_shared && startPrelievo + limPrelievo > d_file_size) {
+        if(startPrelievo + limPrelievo > d_file_size) {
             limPrelievo = d_file_size - startPrelievo;
         }
 
@@ -133,46 +139,67 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         if(limPrelievo >= d_target_string_len) {
 
             u64 startSearch = block_pos * d_memory_for_thread;
-            u64 shared_remainder = d_shared_memory_size - startSearch;
             u64 file_remainder = d_file_size - (startPrelievo + startSearch);
 
-            // tumore
-            int bytes_left, extra_search_field;
-            if(current_shared == last_shared && file_remainder <= shared_remainder){
-                bytes_left = shared_remainder;
-                extra_search_field = 0;
-            }else{
-                bytes_left = shared_remainder;
-                extra_search_field = min((u64)(d_target_string_len - 1), file_remainder - shared_remainder);
-            }
+            if(file_remainder > 0 && startSearch < d_chunk_step){
 
-            u32 target_index = 0, candidate_index = startPrelievo + startSearch;
+                // tumore
+                u32 search_end = startSearch;
+                u32 search_limit = 0;
 
-            while(true){ //ogni thread prende peszo di memoria shared
-                if(bytes_left <= 0){
-                    if(target_index != 0){
-                        extra_search_field--;
-                        if(extra_search_field < 0)
-                            break;
-                    }else
-                        break;
+                //GEMINI
+                // Quanti byte "normali" spettano a questo thread?
+                // Prende d_memory_for_thread, a meno che non sbatta contro d_chunk_step o la fine del file
+                u64 valid_thread_bytes = d_memory_for_thread;
+                if (startSearch + valid_thread_bytes > d_chunk_step) {
+                    valid_thread_bytes = d_chunk_step - startSearch;
                 }
-                
-                if(d_target_string[target_index] == file_buffer[candidate_index]){
-                    target_index++;
-                    candidate_index++;
-                    bytes_left--;
-                    
-                    if(target_index == d_target_string_len){
-                        my_occurrences++;
-                        target_index = d_longest_prefix_suffix_array[target_index - 1];
-                    }
+
+                if (file_remainder <= valid_thread_bytes) {
+                    // Siamo all'ultimissimo pezzo del file, niente extra field
+                    search_end += file_remainder;
+                } else {
+                    // Caso normale: limitiamo la ricerca normale e calcoliamo l'extra
+                    search_end += valid_thread_bytes;
+                    u64 remaining_after_end = file_remainder - valid_thread_bytes;
+                    search_limit = (d_target_string_len - 1 < remaining_after_end) ? (d_target_string_len - 1) : remaining_after_end;
+                }
+                // FIN QUA
+
+                /*
+                // IL NOSTRO
+                if(file_remainder <= d_memory_for_thread){
+                    search_end += file_remainder;
                 }else{
-                    if(target_index != 0)
-                        target_index = d_longest_prefix_suffix_array[target_index - 1];
-                    else{
+                    search_end += d_memory_for_thread;
+                    search_limit = min((u64)(d_target_string_len - 1), file_remainder - d_memory_for_thread);
+                }
+                //FIN QUA
+                */
+
+                search_limit += search_end;
+
+                u32 target_index = 0, candidate_index = startSearch;
+
+                while(candidate_index < search_limit){ //ogni thread prende peszo di memoria shared
+
+                    if (candidate_index >= search_end && target_index == 0)
+                        break;
+                    
+                    if(d_target_string[target_index] == shared_buffer[candidate_index]){
+                        target_index++;
                         candidate_index++;
-                        bytes_left--;
+                        
+                        if(target_index == d_target_string_len){
+                            my_occurrences++;
+                            target_index = d_longest_prefix_suffix_array[target_index - 1];
+                        }
+                    }else{
+                        if(target_index != 0)
+                            target_index = d_longest_prefix_suffix_array[target_index - 1];
+                        else{
+                            candidate_index++;
+                        }
                     }
                 }
             }

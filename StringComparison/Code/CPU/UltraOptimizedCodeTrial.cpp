@@ -14,17 +14,18 @@ uintmax_t getNewChunk(){
 }
 
 void findStringIstance(int thread_index, int){
+    
+    const int target_string_length = strlen(target_string);
+    
+    u64 current_chunk_start;
 
-    uintmax_t current_chunk_start = getNewChunk();
-    long long bytes_left = (file_size - current_chunk_start < CHUNK_SIZE) ? file_size - current_chunk_start : CHUNK_SIZE;
+    u64 valid_interval;
+    u64 search_end, search_limit;
 
-    int target_string_length = strlen(target_string);
+    u64 target_index, candidate_index;
 
-    u64 target_index = 0, candidate_index = current_chunk_start;
     int local_occurrences = 0;
 
-    int extra_search_field = (file_size - current_chunk_start < CHUNK_SIZE) ? 0 : min((u64)(target_string_length -1), file_size - (candidate_index + bytes_left));
-    
     #ifdef DEBUG
     
         chrono::steady_clock::time_point start = chrono::steady_clock::now();
@@ -32,27 +33,34 @@ void findStringIstance(int thread_index, int){
     
     #endif
     
-    while(current_chunk_start < file_size){
+    while(true){
 
+        current_chunk_start = getNewChunk();
+
+        if(current_chunk_start >= file_size)
+            break;
+                
         #ifdef DEBUG
-
+            
             chunks_taken++;
-
+            
         #endif
 
-        while(true){
-            if(bytes_left <= 0){
-                if(target_index != 0){
-                    extra_search_field--;
-                    if(extra_search_field < 0)
-                        break;
-                }else
-                    break;
-            }
+        target_index = 0;
+        candidate_index = current_chunk_start;
+        
+        valid_interval = file_size - current_chunk_start;
+        search_end = current_chunk_start + ((valid_interval < CHUNK_SIZE) ? valid_interval : CHUNK_SIZE);
+        search_limit = search_end + min((u64)(target_string_length - 1), file_size - search_end);
+
+        while(candidate_index < search_limit){
+
+            if(candidate_index >= search_end && target_index == 0)
+                break;
+
             if(target_string[target_index] == file_buffer[candidate_index]){
                 target_index++;
                 candidate_index++;
-                bytes_left--;
 
                 if(target_index == target_string_length){
                     local_occurrences++;
@@ -61,27 +69,12 @@ void findStringIstance(int thread_index, int){
             }else{
                 if(target_index != 0)
                     target_index = longest_prefix_suffix_array[target_index - 1];
-                else{
+                else
                     candidate_index++;
-                    bytes_left--;
-                }
             }
         }
-        
-        current_chunk_start = getNewChunk();
-        target_index = 0;
-        candidate_index = current_chunk_start;
-
-        if(file_size - current_chunk_start <= CHUNK_SIZE){
-            bytes_left = file_size - current_chunk_start;
-            extra_search_field = 0;
-        } else {
-            bytes_left = CHUNK_SIZE;
-            extra_search_field = target_string_length - 1;
-        }
-
     }
-    atomic_occurrences+=local_occurrences;
+    atomic_occurrences += local_occurrences;
 
     #ifdef DEBUG
     
