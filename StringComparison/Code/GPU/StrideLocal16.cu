@@ -1,5 +1,5 @@
 #define VARS
-#define TYPE _Big_uint128
+#define TYPE uint4
 #define EXP 4
 #define ROUND roundToSixteen
 

@@ -31,6 +31,10 @@ void implementationDependantManagement(){
     );  
     
     shared_memory_size = props.sharedMemPerBlock / numBlocksPerSm;
+    
+    // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
+    shared_memory_size = shared_memory_size & ~15ULL;
+
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
             
@@ -50,36 +54,47 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     const u32 block_pos = threadIdx.x; // id del thread nel blocco
     const u32 block_size = blockDim.x;
     
+    // GEMINI DICE: Poiché d_shared_memory_size è multiplo di 16 e d_target_string_len 
+    // viene arrotondato a 16, chunk_step sarà SEMPRE multiplo di 16.
+    // Di conseguenza, startPrelievo sarà sempre perfettamente allineato!
+
     // Step calcolato per creare sovrapposizione tra i blocchi e non perdere
     // le parole che cadono a cavallo tra un chunk e l'altro.
     const u32 overlap = ROUND(d_target_string_len - 1);
     const u64 chunk_step = d_shared_memory_size - overlap;
     const u64 block_jump = chunk_step * gridDim.x;
     
-    u64 my_occurrences = 0;
+    u32 my_occurrences = 0; // gemini dice sia piu veloce un registro a 4 byte
 
     for(u64 startPrelievo = chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
         
         // Evitiamo di leggere oltre la fine del file
         u64 limPrelievo = d_shared_memory_size; //vedo i byte ancora da trasf
+        bool is_last_block = false;
+
         if(startPrelievo + limPrelievo > d_file_size) {
             limPrelievo = d_file_size - startPrelievo;
+            is_last_block = true;
         }
 
-        limPrelievo >>= EXP;
+        u64 limPrelievoLarge = ROUND(limPrelievo) >> EXP;
+        u64 startPrelievoLarge = ROUND(startPrelievo) >> EXP;
 
-        // gli accessi saranno sempre allineati a 4, qui cerco interi
-        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += block_size){
-            ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievo >> EXP) + thisPrelievo];
+        // gli accessi saranno sempre allineati a 4, qui cerco TYPE
+        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievoLarge; thisPrelievo += block_size){
+            ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievoLarge) + thisPrelievo];
         }
 
         __syncthreads();
 
-        limPrelievo <<= EXP; 
         if(limPrelievo >= d_target_string_len){
-            
-            for(u64 startSearch = block_pos; startSearch <= limPrelievo - overlap - 1; startSearch += block_size){
-                int i = 0;
+            u64 searchLimit;
+            if(is_last_block)
+                searchLimit = limPrelievo - d_target_string_len;
+            else
+                searchLimit = limPrelievo - overlap - 1;
+            for(u64 startSearch = block_pos; startSearch <= searchLimit; startSearch += block_size){
+                u32 i = 0;
                 for(; i < d_target_string_len ; i++){ //confronto per la string
                     if(shared_buffer[startSearch + i] != d_target_string[i])
                         break; 

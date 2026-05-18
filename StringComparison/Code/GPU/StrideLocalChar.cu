@@ -48,7 +48,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     const u64 chunk_step = d_shared_memory_size - d_target_string_len + 1;
     const u64 block_jump = chunk_step * gridDim.x;
     
-    u64 my_occurrences = 0;
+    u32 my_occurrences = 0; // gemini dice sia piu veloce un registro a 4 byte
 
     for(u64 startPrelievo = chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
         
@@ -58,8 +58,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             limPrelievo = d_file_size - startPrelievo;
         }
 
-        // Si fa byte per byte. Niente cast a (int*). Evita l'Unaligned Memory Fault
-        // che ti faceva crashare il kernel e restituiva 0.
+
         for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += block_size){
             shared_buffer[thisPrelievo] = file_buffer[startPrelievo + thisPrelievo];
         }
@@ -67,7 +66,8 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         __syncthreads();
 
         if(limPrelievo >= d_target_string_len) {
-            for(u64 startSearch = block_pos; startSearch <= limPrelievo - d_target_string_len; startSearch += block_size){
+            u64 searchLimit = limPrelievo - d_target_string_len;
+            for(u64 startSearch = block_pos; startSearch <= searchLimit; startSearch += block_size){
                 int i = 0;
                 for(; i < d_target_string_len ; i++){
                     if(shared_buffer[startSearch + i] != d_target_string[i])

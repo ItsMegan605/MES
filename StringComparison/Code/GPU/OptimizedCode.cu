@@ -4,9 +4,9 @@
 
 void implementationDependantManagement(){
 
-    int target_string_len = strlen(target_string);
+    const int target_string_len = strlen(target_string);
 
-    totalThreads = file_size - target_string_len + 1;
+    const u64 totalThreads = file_size - target_string_len + 1;
 
     blocksPerGrid = totalThreads / threadsPerBlock + ((totalThreads % threadsPerBlock > 0) ? 1: 0);
 
@@ -21,13 +21,13 @@ void implementationDependantManagement(){
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
     u64 global_id = threadIdx.x + (u64)blockDim.x * blockIdx.x;
-    int block_pos = threadIdx.x;
-    int block_size = blockDim.x;
+    u32 block_pos = threadIdx.x;
+    u32 block_size = blockDim.x;
 
     u32 target_len = d_target_string_len;
     u64 totalThreads = d_totalThreads;
     
-    __shared__ u64 local_occurrences;
+    __shared__ u64 local_occurrences; // perche non abbiamo fatto variabili locali?
 
     if(block_pos == 0)
         local_occurrences = 0;
@@ -44,7 +44,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     __syncthreads();
 
     if(global_id < totalThreads){
-        int i = 0;
+        u32 i = 0;
         for(; i < target_len; i++){
             if(d_target_string[i] != shared_buffer[block_pos + i])
             break;
