@@ -37,6 +37,15 @@ void implementationDependantManagement(){
 
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
+
+    // Interroghiamo gli attributi specifici del nostro kernel
+    cudaFuncAttributes attr;
+    cudaFuncGetAttributes(&attr, parallelStringSearch);
+
+    cout << "--- INFO KERNEL ---" << endl;
+    cout << "Registri usati per ogni thread: " << attr.numRegs << endl;
+    cout << "Memoria condivisa statica per blocco: " << attr.sharedSizeBytes << " bytes" << endl;
+    cout << "-------------------" << endl;
             
     // Calcoliamo la griglia totale
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;

@@ -1,7 +1,16 @@
 #include "shared.h"
 #include "shared.cu"
+//#include "bench.cu"
+
+/*
+template <typename T>
+__host__ __device__ inline T roundToFour(T value){
+    return (value + 3) & ~ (T)3;
+}
+*/
 
 //NB: le var con d sono la "copia" dei parametri CPU
+__global__ void parallelStringSearch(char* file_buffer, u64* occurrences);
 
 void implementationDependantManagement(){
 
@@ -29,7 +38,7 @@ void implementationDependantManagement(){
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
 
     // limite della ricerca
-    const u64 workingThreads = d_file_size - d_target_string_len + 1;
+    const u64 workingThreads = file_size - target_string_len + 1;
 
     cudaMemcpyToSymbol(d_totalThreads, &workingThreads, sizeof(u64)); //CHECK
 
