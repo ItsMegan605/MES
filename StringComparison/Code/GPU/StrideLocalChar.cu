@@ -1,5 +1,15 @@
 #include "shared.h"
-#include "shared.cu"
+
+#ifdef BENCHMARK
+
+    #include "bench.cu"
+
+#else
+
+    #include "shared.cu"
+
+#endif
+
 
 //NB: le var con d sono la "copia" dei parametri CPU
 

@@ -1,5 +1,14 @@
 #include "shared.h"
-#include "shared.cu"
+
+#ifdef BENCHMARK
+
+    #include "bench.cu"
+
+#else
+
+    #include "shared.cu"
+
+#endif
 
 #ifndef VARS
 

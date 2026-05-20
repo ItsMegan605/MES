@@ -1,13 +1,14 @@
 #include "shared.h"
-#include "shared.cu"
-//#include "bench.cu"
 
-/*
-template <typename T>
-__host__ __device__ inline T roundToFour(T value){
-    return (value + 3) & ~ (T)3;
-}
-*/
+#ifdef BENCHMARK
+
+    #include "bench.cu"
+
+#else
+
+    #include "shared.cu"
+
+#endif
 
 //NB: le var con d sono la "copia" dei parametri CPU
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences);

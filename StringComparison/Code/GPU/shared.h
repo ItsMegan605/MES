@@ -2,6 +2,7 @@
 #define SHARED_H
 
 #define DEBUG 
+#define BENCHMARK
 
 #include <iostream>
 #include <string>

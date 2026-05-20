@@ -60,14 +60,23 @@ struct comma_facet : std::numpunct<char> {
 
 int main(int argc, char* argv[]) {
 
+    if(argc != 2){
+        cout<<"metti il nome del file .csv"<<endl;
+    }
+
+    char * output_file = new char[strlen(argv[1]) + 5]; // + .csv + \0
+    strcpy(output_file,argv[1]);
+    strcpy(output_file + strlen(argv[1]), ".csv");
+
     // 1. Setup Configurazioni del Benchmark
     std::vector<std::string> strings = {"abracadabra", "unevenstring", "------------"};
     std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256};
     std::vector<u64> file_sizes_mb = {3000, 5000, 7000};
+
     const int runs = 30;
 
     // 2. Setup del file CSV
-    std::ofstream csv("benchmark_results.csv");
+    std::ofstream csv(output_file);
     if (!csv) {
         cerr << "Errore: impossibile creare benchmark_results.csv\n";
         return 1;
