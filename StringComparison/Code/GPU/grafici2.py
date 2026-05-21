@@ -36,7 +36,7 @@ for csv_file in csv_files:
         print(f"Salto il file {csv_file}: colonne necessarie mancanti.")
         continue
         
-    # Crea la cartella specifica per questo CSV dentro la cartella "plots"
+    # Crea la cartella specifica per questo CSV dentro la cartella "plotsTot"
     csv_name = os.path.splitext(os.path.basename(csv_file))[0]
     output_dir = os.path.join(base_plots_dir, csv_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -60,7 +60,7 @@ for csv_file in csv_files:
     for stringa in unique_strings:
         df_sub = df[df['stringa cercata'] == stringa]
         
-        # Genera il grafico a linee con intervallo di confidenza automatico
+        # Genera il grafico a linee con intervallo di confidenza a BARRE (linee verticali)
         ax = sns.lineplot(
             data=df_sub,
             x="thread per blocco",
@@ -68,7 +68,9 @@ for csv_file in csv_files:
             hue="dimensione file",
             marker="o",
             palette="viridis",
-            errorbar=('ci', 95)  # Calcola l'intervallo di confidenza al 95% sulle 30 run
+            errorbar=('ci', 95),  # Calcola l'intervallo di confidenza al 95% sulle 30 run
+            err_style="bars",     # Disegna l'intervallo come linee e non come banda sfumata
+            err_kws={'capsize': 4} # Aggiunge i "cappelli" orizzontali agli estremi delle linee
         )
         
         # Configurazione assi e titoli
@@ -100,7 +102,7 @@ for csv_file in csv_files:
     for dimensione in unique_sizes:
         df_sub = df[df['dimensione file'] == dimensione]
         
-        # Genera il grafico a linee con intervallo di confidenza automatico
+        # Genera il grafico a linee con intervallo di confidenza a BARRE (linee verticali)
         ax = sns.lineplot(
             data=df_sub,
             x="thread per blocco",
@@ -108,7 +110,9 @@ for csv_file in csv_files:
             hue="stringa cercata",
             marker="o",
             palette="tab10",
-            errorbar=('ci', 95)  # Calcola l'intervallo di confidenza al 95% sulle 30 run
+            errorbar=('ci', 95),   # Calcola l'intervallo di confidenza al 95% sulle 30 run
+            err_style="bars",      # Disegna l'intervallo come linee
+            err_kws={'capsize': 4}  # Aggiunge i "cappelli" orizzontali agli estremi delle linee
         )
         
         # Configurazione assi e titoli
@@ -131,4 +135,4 @@ for csv_file in csv_files:
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
 
-print("\nElaborazione completata! Controlla la cartella 'plots' per vedere i risultati suddivisi.")
+print("\nElaborazione completata! Controlla la cartella 'plotsTot' per vedere i risultati suddivisi.")

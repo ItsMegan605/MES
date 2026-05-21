@@ -10,6 +10,22 @@
 void implementationDependantManagement();
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences);
 
+template <typename T>
+__host__ __device__ inline T roundToFour(T value){
+    return (value + 3) & ~ (T)3;
+}
+
+template <typename T>
+__host__ __device__ inline T roundToEight(T value){
+    return (value + 7) & ~ (T)7;
+}
+
+template <typename T>
+__host__ __device__ inline T roundToSixteen(T value){
+    return (value + 15) & ~ (T)15;
+}
+
+
 bool read_file_from_disk(){
     
     std::ifstream file(FILE_PATH, std::ios::binary);
@@ -47,11 +63,6 @@ bool read_file_from_disk(){
 }
 
 
-
-template <typename T>
-__host__ __device__ inline T roundToSixteen(T value){
-    return (value + 15) & ~ (T)15;
-}
 
 // Hack per forzare la virgola per i decimali invece del punto (per Excel in Italiano)
 struct comma_facet : std::numpunct<char> {
