@@ -77,9 +77,6 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
     if(block_pos == 0)
         shared_occurrences = 0;
-    
-        //memory coalesced access: dati raggruppaty 8 byte alla volta 
-    u32 * shared_buffer_long = (u32*)shared_buffer;
 
     u32 numPrelievi = roundToFour(blockDim.x + d_target_string_len -1)/4;
     u32 prelieviLeft;
@@ -92,7 +89,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         
         thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
         if(block_pos < thisPrelievi){
-                shared_buffer_long[block_pos] = *(((u32*)(file_buffer + blk)) + block_pos);
+                shared_buffer[block_pos] = file_buffer[blk + block_pos];
         }
 
         // abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo

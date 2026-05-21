@@ -70,7 +70,6 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     extern __shared__ char shared_buffer[];
 
     const u32 block_pos = threadIdx.x; // id del thread nel blocco
-    const u32 block_size = blockDim.x;
     
     // GEMINI DICE: Poiché d_shared_memory_size è multiplo di 16 e d_target_string_len 
     // viene arrotondato a 16, chunk_step sarà SEMPRE multiplo di 16.
@@ -99,7 +98,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         u64 startPrelievoLarge = ROUND(startPrelievo) >> EXP;
 
         // gli accessi saranno sempre allineati a 4, qui cerco TYPE
-        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievoLarge; thisPrelievo += block_size){
+        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievoLarge; thisPrelievo += blockDim.x){
             ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievoLarge) + thisPrelievo];
         }
 
@@ -111,7 +110,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
                 searchLimit = limPrelievo - d_target_string_len;
             else
                 searchLimit = limPrelievo - overlap - 1;
-            for(u64 startSearch = block_pos; startSearch <= searchLimit; startSearch += block_size){
+            for(u64 startSearch = block_pos; startSearch <= searchLimit; startSearch += blockDim.x){
                 u32 i = 0;
                 for(; i < d_target_string_len ; i++){ //confronto per la string
                     if(shared_buffer[startSearch + i] != d_target_string[i])
