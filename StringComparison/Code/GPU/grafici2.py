@@ -1,6 +1,7 @@
 import os
 import glob
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -30,13 +31,27 @@ for csv_file in csv_files:
         print(f"Errore nella lettura di {csv_file}: {e}")
         continue
         
+    # --- GESTIONE NaN e inf ---
+    # 1. Sostituiamo gli infiniti (positivi e negativi) con NaN
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    
+    # 2. Rimuoviamo le righe in cui il throughput non è un numero valido.
+    # In questo modo evitiamo crolli a zero, oscillazioni e medie sballate.
+    df.dropna(subset=['throughput'], inplace=True)
+    
+    # Controllo di sicurezza: se dopo la pulizia il file è vuoto, lo saltiamo
+    if df.empty:
+        print(f"Salto il file {csv_file}: nessun dato valido rimasto dopo la pulizia da inf/NaN.")
+        continue
+    # --------------------------
+
     # Verifica preliminare delle colonne necessarie
     required_cols = ['stringa cercata', 'thread per blocco', 'dimensione file', 'throughput']
     if not all(col in df.columns for col in required_cols):
         print(f"Salto il file {csv_file}: colonne necessarie mancanti.")
         continue
         
-    # Crea la cartella specifica per questo CSV dentro la cartella "plotsTot"
+    # Crea la cartella specifica per questo CSV dentro la cartella base
     csv_name = os.path.splitext(os.path.basename(csv_file))[0]
     output_dir = os.path.join(base_plots_dir, csv_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -60,6 +75,12 @@ for csv_file in csv_files:
     for stringa in unique_strings:
         df_sub = df[df['stringa cercata'] == stringa]
         
+        # Se non ci sono dati per questa combinazione (magari rimossi dalla pulizia), salta
+        if df_sub.empty:
+            continue
+            
+        plt.figure(figsize=(8, 6)) # Inizializza la figura per evitare sovrapposizioni
+        
         # Genera il grafico a linee con intervallo di confidenza a BARRE (linee verticali)
         ax = sns.lineplot(
             data=df_sub,
@@ -68,7 +89,7 @@ for csv_file in csv_files:
             hue="dimensione file",
             marker="o",
             palette="viridis",
-            errorbar=('ci', 95),  # Calcola l'intervallo di confidenza al 95% sulle 30 run
+            errorbar=('ci', 95),  # Calcola l'intervallo di confidenza al 95% sulle run
             err_style="bars",     # Disegna l'intervallo come linee e non come banda sfumata
             err_kws={'capsize': 4} # Aggiunge i "cappelli" orizzontali agli estremi delle linee
         )
@@ -91,7 +112,7 @@ for csv_file in csv_files:
         filename_png = f"grafico_stringa_{safe_stringa}.png"
         filepath = os.path.join(output_dir, filename_png)
         
-        # Salvataggio e chiusura della figura corrente per resettare lo stato di matplotlib
+        # Salvataggio e chiusura della figura corrente
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
@@ -102,7 +123,13 @@ for csv_file in csv_files:
     for dimensione in unique_sizes:
         df_sub = df[df['dimensione file'] == dimensione]
         
-        # Genera il grafico a linee con intervallo di confidenza a BARRE (linee verticali)
+        # Se non ci sono dati per questa combinazione, salta
+        if df_sub.empty:
+            continue
+            
+        plt.figure(figsize=(8, 6))
+        
+        # Genera il grafico a linee con intervallo di confidenza a BARRE
         ax = sns.lineplot(
             data=df_sub,
             x="thread per blocco",
@@ -110,9 +137,9 @@ for csv_file in csv_files:
             hue="stringa cercata",
             marker="o",
             palette="tab10",
-            errorbar=('ci', 95),   # Calcola l'intervallo di confidenza al 95% sulle 30 run
-            err_style="bars",      # Disegna l'intervallo come linee
-            err_kws={'capsize': 4}  # Aggiunge i "cappelli" orizzontali agli estremi delle linee
+            errorbar=('ci', 95),   
+            err_style="bars",      
+            err_kws={'capsize': 4}  
         )
         
         # Configurazione assi e titoli
@@ -135,4 +162,4 @@ for csv_file in csv_files:
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
 
-print("\nElaborazione completata! Controlla la cartella 'plotsTot' per vedere i risultati suddivisi.")
+print(f"\nElaborazione completata! Controlla la cartella '{base_plots_dir}' per vedere i risultati suddivisi.")

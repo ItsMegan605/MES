@@ -98,8 +98,7 @@ void implementationDependantManagement(){
     //u64 totalThreads = blocksPerGrid * threadsPerBlock;
     
 
-    const u64 chunk_step = shared_memory_size - target_string_len + 1;
-    
+    const u64 chunk_step = ((shared_memory_size - target_string_len + 1)  >> EXP) << EXP;    
     // GEMINI: Dividiamo solo lo spazio utile (chunk_step) tra i thread
     const u64 memory_for_thread = (chunk_step + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -143,11 +142,9 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         
         // Evitiamo di leggere oltre la fine del file
         u64 limPrelievo = d_shared_memory_size; //vedo i byte ancora da trasf
-        bool is_last_block = false;
-
+        
         if(startPrelievo + limPrelievo > d_file_size) {
             limPrelievo = d_file_size - startPrelievo;
-            is_last_block = true;
         }
 
         u64 limPrelievoLarge = ROUND(limPrelievo) >> EXP;

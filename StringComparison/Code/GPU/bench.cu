@@ -81,8 +81,8 @@ int main(int argc, char* argv[]) {
 
     // 1. Setup Configurazioni del Benchmark
     std::vector<std::string> strings = {"abracadabra", "unevenstring", "------------"};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256};
-    std::vector<u64> file_sizes_mb = {3000, 5000, 7000};
+    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416 };
+    std::vector<u64> file_sizes_mb = {7000};
 
     const int runs = 30;
 
