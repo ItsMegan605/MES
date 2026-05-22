@@ -80,11 +80,12 @@ int main(int argc, char* argv[]) {
     strcpy(output_file + strlen(argv[1]), ".csv");
 
     // 1. Setup Configurazioni del Benchmark
-    std::vector<std::string> strings = {"abracadabra", "unevenstring", "------------"};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416 };
+    std::vector<std::string> strings = { "------------"};//{"abracadabra", "unevenstring", "------------"};
+    std::vector<u64> threads = {64};
+    std::vector<int> nblocks = {24};
     std::vector<u64> file_sizes_mb = {7000};
 
-    const int runs = 30;
+    const int runs = 1; // MI SE CAMBI
 
     // 2. Setup del file CSV
     std::ofstream csv(output_file);
@@ -138,9 +139,15 @@ int main(int argc, char* argv[]) {
             cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
             cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
-            for(u64 t : threads) {
-                threadsPerBlock = t;
-
+            //for(u64 t : threads) {
+            //    threadsPerBlock = t;
+            
+            // aggiunta
+            threadsPerBlock = threads[0];
+            for(int b : nblocks) {
+                numBlocksPerSm = b;
+            //fine aggiunta 
+            
                 // Calcola gridDim e shared_memory in base ai nuovi threadsPerBlock
                 implementationDependantManagement(); 
                 
@@ -164,14 +171,22 @@ int main(int argc, char* argv[]) {
 
                     // Salvataggio nel file CSV
                     csv << str << ";" 
-                        << threadsPerBlock << ";" 
+                        #ifdef MAX_OCCUPANCY
+                            << threadsPerBlock << ";" 
+                        #else
+                            << numBlocksPerSm << ";" 
+                        #endif
                         << r << ";" 
                         << fs_mb << ";" 
                         << std::fixed << std::setprecision(2) << throughput << "\n";
                     
                     // Stampa a schermo per farti vedere che è vivo
-                    cout << "Completata Run " << r << "/30 | Str: " << str 
-                         << " | Thr: " << threadsPerBlock 
+                    cout << "Completata Run " << r << "/30 | Str: " << str
+                        #ifdef MAX_OCCUPANCY 
+                            << " | Thr: " << threadsPerBlock 
+                         #else
+                            << " | blocchi: " << numBlocksPerSm 
+                         #endif
                          << " | Size: " << fs_mb 
                          << "MB | Throughput: " << throughput << endl;
                 }

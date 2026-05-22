@@ -71,8 +71,6 @@ void implementationDependantManagement(){
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceId);
     
-    int numBlocksPerSm;
-    
     // Chiediamo a CUDA quanti blocchi ci stanno con questa shared memory
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(
         &numBlocksPerSm, 
@@ -80,7 +78,7 @@ void implementationDependantManagement(){
         threadsPerBlock, 
         128 
     );  
-    
+
     shared_memory_size = props.sharedMemPerBlock / numBlocksPerSm;
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;

@@ -2,7 +2,9 @@
 #define SHARED_H
 
 #define DEBUG 
-//#define BENCHMARK
+#define BENCHMARK
+//#define MAX_OCCUPANCY
+
 
 #include <iostream>
 #include <string>
@@ -50,6 +52,9 @@ char* file_buffer;
 //file dim and string we are looking for
 u64 file_size;
 char* target_string;
+
+// number of blocks per SM
+int numBlocksPerSm;
 
 // kmp
 int* longest_prefix_suffix_array = nullptr;

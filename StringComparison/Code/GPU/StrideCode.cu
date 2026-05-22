@@ -25,9 +25,10 @@ void implementationDependantManagement(){
 
     shared_memory_size = roundToFour(threadsPerBlock + target_string_len - 1);
 
+    
     // Chiediamo a CUDA: "Dato il mio threadsPerBlock, quanti blocchi posso 
     // mettere al massimo in un singolo Streaming Multiprocessor (SM)?"
-    int numBlocksPerSm;
+
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(
         &numBlocksPerSm, 
         parallelStringSearch, 
