@@ -3,7 +3,7 @@
 
 #define DEBUG 
 #define BENCHMARK
-//#define MAX_OCCUPANCY
+#define MAX_OCCUPANCY
 
 
 #include <iostream>

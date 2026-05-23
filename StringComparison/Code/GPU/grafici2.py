@@ -36,12 +36,11 @@ for csv_file in csv_files:
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     
     # 2. Rimuoviamo le righe in cui il throughput non è un numero valido.
-    # In questo modo evitiamo crolli a zero, oscillazioni e medie sballate.
     df.dropna(subset=['throughput'], inplace=True)
     
-    # Controllo di sicurezza: se dopo la pulizia il file è vuoto, lo saltiamo
+    # Controllo di sicurezza
     if df.empty:
-        print(f"Salto il file {csv_file}: nessun dato valido rimasto dopo la pulizia da inf/NaN.")
+        print(f"Salto il file {csv_file}: nessun dato valido rimasto dopo la pulizia.")
         continue
     # --------------------------
 
@@ -56,32 +55,30 @@ for csv_file in csv_files:
     output_dir = os.path.join(base_plots_dir, csv_name)
     os.makedirs(output_dir, exist_ok=True)
     
-    # Per garantire la stessa scala (asse Y) tra tutti i grafici di questo specifico file,
-    # calcoliamo il minimo e il massimo globale del throughput includendo un margine per i CI
+    # Calcolo della scala Y fissa basata sull'intero dataset (permette di confrontare
+    # a occhio grafici diversi dello stesso file senza farsi ingannare dagli assi)
     t_min = df['throughput'].min()
     t_max = df['throughput'].max()
     ymin = 0 if t_min >= 0 else t_min * 1.1
-    ymax = t_max * 1.15 if t_max > 0 else 1.0  # +15% di margine per non tagliare le bande di confidenza
+    ymax = t_max * 1.15 if t_max > 0 else 1.0  # +15% di margine
     
-    # Ottieni i valori unici per i cicli
+    # Ottieni i valori unici per generare i vari grafici
     unique_strings = df['stringa cercata'].unique()
     unique_sizes = df['dimensione file'].unique()
     unique_threads = sorted(df['thread per blocco'].unique())
     
     # =========================================================================
-    # GRAFICO 1: FISSIAMO LA STRINGA (Immagini separate, stessa scala)
+    # GRAFICO 1: GRAFICI INDIVIDUALI (Es: solo 'abracadabra', solo 'unevenstring', ecc.)
     # =========================================================================
-    print(f"-> Generazione grafici per Stringa ({len(unique_strings)} immagini distinte)...")
+    print(f"-> Generazione grafici singoli per Stringa ({len(unique_strings)} immagini distinte)...")
     for stringa in unique_strings:
         df_sub = df[df['stringa cercata'] == stringa]
         
-        # Se non ci sono dati per questa combinazione (magari rimossi dalla pulizia), salta
         if df_sub.empty:
             continue
             
-        plt.figure(figsize=(8, 6)) # Inizializza la figura per evitare sovrapposizioni
+        plt.figure(figsize=(8, 6))
         
-        # Genera il grafico a linee con intervallo di confidenza a BARRE (linee verticali)
         ax = sns.lineplot(
             data=df_sub,
             x="thread per blocco",
@@ -89,52 +86,43 @@ for csv_file in csv_files:
             hue="dimensione file",
             marker="o",
             palette="viridis",
-            errorbar=('ci', 95),  # Calcola l'intervallo di confidenza al 95% sulle run
-            err_style="bars",     # Disegna l'intervallo come linee e non come banda sfumata
-            err_kws={'capsize': 4} # Aggiunge i "cappelli" orizzontali agli estremi delle linee
+            errorbar=('ci', 95),  
+            err_style="bars",     
+            err_kws={'capsize': 4} 
         )
         
-        # Configurazione assi e titoli
         ax.set_xlabel("Thread per Blocco")
         ax.set_ylabel("Throughput Medio (con CI 95%)")
         ax.set_title(f"Stringa: '{stringa}'\n(Linee = Dimensione File MB)")
-        
-        # Applica la scala fissa calcolata globalmente per il file corrente
         ax.set_ylim(ymin, ymax)
         ax.set_xticks(unique_threads)
         ax.tick_params(axis='x', rotation=45)
-        
-        # Posiziona la legenda all'esterno a destra per evitare sovrapposizioni
         ax.legend(title="dimensione file", bbox_to_anchor=(1.05, 1), loc='upper left')
         
-        # Sanatizzazione del nome della stringa per il nome del file PNG
         safe_stringa = "".join([c if c.isalnum() or c in (' ', '_', '-') else '_' for c in str(stringa)]).strip()
-        filename_png = f"grafico_stringa_{safe_stringa}.png"
+        filename_png = f"grafico_singolo_{safe_stringa}.png"
         filepath = os.path.join(output_dir, filename_png)
         
-        # Salvataggio e chiusura della figura corrente
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         
     # =========================================================================
-    # GRAFICO 2: FISSIAMO LA DIMENSIONE DEL FILE (Immagini separate, stessa scala)
+    # GRAFICO 2: GRAFICO COMPLETO (Tutte e 3 le stringhe a confronto per ogni file)
     # =========================================================================
-    print(f"-> Generazione grafici per Dimensione File ({len(unique_sizes)} immagini distinte)...")
+    print(f"-> Generazione grafico COMPLETO per Dimensione File ({len(unique_sizes)} immagini distinte)...")
     for dimensione in unique_sizes:
         df_sub = df[df['dimensione file'] == dimensione]
         
-        # Se non ci sono dati per questa combinazione, salta
         if df_sub.empty:
             continue
             
         plt.figure(figsize=(8, 6))
         
-        # Genera il grafico a linee con intervallo di confidenza a BARRE
         ax = sns.lineplot(
             data=df_sub,
             x="thread per blocco",
             y="throughput",
-            hue="stringa cercata",
+            hue="stringa cercata", # Qui crea le 3 linee diverse nello stesso grafico
             marker="o",
             palette="tab10",
             errorbar=('ci', 95),   
@@ -142,24 +130,19 @@ for csv_file in csv_files:
             err_kws={'capsize': 4}  
         )
         
-        # Configurazione assi e titoli
         ax.set_xlabel("Thread per Blocco")
         ax.set_ylabel("Throughput Medio (con CI 95%)")
-        ax.set_title(f"Dimensione File: {dimensione} MB\n(Linee = Stringa)")
+        ax.set_title(f"Confronto Completo - Dimensione File: {dimensione} MB\n(Tutte le stringhe)")
         
-        # Applica la stessa scala fissa calcolata globalmente per il file corrente
         ax.set_ylim(ymin, ymax)
         ax.set_xticks(unique_threads)
         ax.tick_params(axis='x', rotation=45)
-        
-        # Posiziona la legenda all'esterno a destra
         ax.legend(title="stringa cercata", bbox_to_anchor=(1.05, 1), loc='upper left')
         
-        filename_png = f"grafico_dimensione_{dimensione}MB.png"
+        filename_png = f"grafico_completo_confronto_{dimensione}MB.png"
         filepath = os.path.join(output_dir, filename_png)
         
-        # Salvataggio e chiusura della figura
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
 
-print(f"\nElaborazione completata! Controlla la cartella '{base_plots_dir}' per vedere i risultati suddivisi.")
+print(f"\nElaborazione completata! Controlla la cartella '{base_plots_dir}' per i tuoi grafici singoli e completi.")

@@ -23,6 +23,7 @@ __host__ __device__ inline T roundToSixteen(T value){
 }
 
 
+
 bool read_file_from_disk(){
     
     std::ifstream file(FILE_PATH, std::ios::binary);
