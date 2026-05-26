@@ -41,6 +41,7 @@ void implementationDependantManagement(){
 
     #endif
     
+    // shared_memory_size = props.sharedMemPerBlock / numBlocksPerSm;
     shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
     
     // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
@@ -63,7 +64,6 @@ void implementationDependantManagement(){
     //u64 totalThreads = blocksPerGrid * threadsPerBlock;
 
     //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
-
     cudaMemcpyToSymbol(d_shared_memory_size, &shared_memory_size, sizeof(u64));
 }
 
@@ -85,6 +85,9 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     const u64 block_jump = chunk_step * gridDim.x;
     
     u32 my_occurrences = 0; // gemini dice sia piu veloce un registro a 4 byte
+
+    char first_char = d_target_string[0];
+    char last_char = d_target_string[d_target_string_len - 1];
 
     for(u64 startPrelievo = chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
         
@@ -108,48 +111,28 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         __syncthreads();
 
         if(limPrelievo >= d_target_string_len){
-            
             u64 searchLimit;
+            
             if(is_last_block)
                 searchLimit = limPrelievo - d_target_string_len;
             else
                 searchLimit = limPrelievo - overlap - 1;
 
-            bool in_bounds = true;
-            u32 confronto_container;
-            unsigned char bytes_in_container;
+            for(u64 startSearch = block_pos; startSearch <= searchLimit; startSearch += blockDim.x){
 
-            for(u64 startSearch = block_pos<<2; in_bounds ; startSearch += blockDim.x <<2){
-                for(u32 rep = 0; rep < 4; rep++){
-                    confronto_container = 0;
-                    bytes_in_container = 0;
-                    
-                    if(startSearch + rep > searchLimit){
-                        in_bounds = false;
-                        break;
-                    }
+                u32 last = d_target_string_len - 1;
+                
+                if(shared_buffer[startSearch] != first_char || shared_buffer[startSearch + last] != last_char)
+                    continue;
 
-                    u32 confronto_container = *(u32*)(&shared_buffer[startSearch]);
-                    confronto_container >>= (rep << 3); // Scarto i byte precedenti
-                    u32 bytes_in_container = 4 - rep;
-                    
-                    u32 i = 0;
-                    for(; i < d_target_string_len ; i++, bytes_in_container--, confronto_container >>= 8){
-                        if(!bytes_in_container){
-
-                            confronto_container = *(u32*)(&shared_buffer[((startSearch + rep + i) & (~3))]);
-                            bytes_in_container = 4;
-                            
-                        }
-
-                        if((unsigned char)confronto_container != d_target_string[i])
-                            break; 
-                    }
-                    if(i == d_target_string_len)
-                        my_occurrences++; // se trovo occorrenza
+                u32 i = 1;
+                for(; i < last ; i++){ //confronto per la string
+                    if(shared_buffer[startSearch + i] != d_target_string[i])
+                        break; 
                 }
+                if(i >= last)
+                    my_occurrences++; // se trovo occorrenza
             }
-            
         }
         
         __syncthreads();
