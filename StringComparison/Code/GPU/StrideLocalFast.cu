@@ -129,9 +129,9 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
                         break;
                     }
 
-                    u32 confronto_container = *(u32*)(&shared_buffer[startSearch]);
+                    confronto_container = *(u32*)(&shared_buffer[startSearch]);
                     confronto_container >>= (rep << 3); // Scarto i byte precedenti
-                    u32 bytes_in_container = 4 - rep;
+                    bytes_in_container = 4 - rep;
                     
                     u32 i = 0;
                     for(; i < d_target_string_len ; i++, bytes_in_container--, confronto_container >>= 8){

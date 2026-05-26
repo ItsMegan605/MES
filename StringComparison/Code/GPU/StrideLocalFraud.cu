@@ -107,7 +107,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         __syncthreads();
 
         if(limPrelievo >= d_target_string_len){
-
+            u64 searchLimit;
             if(is_last_block)
                 searchLimit = limPrelievo - d_target_string_len;
             else
