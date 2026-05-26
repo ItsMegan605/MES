@@ -2,8 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: Lista dei file da compilare ed eseguire (senza l'estensione .cu)
-::set FILES=KMP KMP16 KMPInt KMPLong MainCode StrideCode StrideLocal16 StrideLocalChar StrideLocalInt StrideLocalLong
-set FILES=KMP16 StrideLocal16 
+set FILES=KMP KMP16 KMPInt KMPLong MainCode StrideCode StrideLocal16 StrideLocalChar StrideLocalInt StrideLocalLong
 
 for %%f in (%FILES%) do (
     echo ========================================================

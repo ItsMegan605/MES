@@ -77,12 +77,13 @@ int main(int argc, char* argv[]) {
         cout<<"metti il nome del file .csv"<<endl;
     }
 
-    char * output_file = new char[strlen(argv[1]) + 5]; // + .csv + \0
-    strcpy(output_file,argv[1]);
-    strcpy(output_file + strlen(argv[1]), ".csv");
+    char * output_file = new char[strlen("csv/")+ strlen(argv[1]) + 5]; // + .csv + \0
+    strcpy(output_file,"csv/");
+    strcpy(output_file + strlen("csv/") ,argv[1]);
+    strcpy(output_file + strlen("csv/") + strlen(argv[1]), ".csv");
 
     // 1. Setup Configurazioni del Benchmark
-    std::vector<std::string> strings = { "abracadabra"};//{"abracadabra", "unevenstring", "------------"};
+    std::vector<std::string> strings = {"abracadabra", "------------"}; //{"abracadabra", "unevenstring", "------------"};
     std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416};
     std::vector<int> nblocks = {24};
     std::vector<u64> file_sizes_mb = {7000};

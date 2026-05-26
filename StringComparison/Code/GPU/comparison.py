@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # 1. Definiamo i file da leggere usando il nuovo file per Stride 16
 stride = {
-    'Stride 16': 'StrideLocal16_7000.csv', # <-- FILE AGGIORNATO
+    'Stride 16': 'StrideLocal16_results.csv', # <-- FILE AGGIORNATO
     'Stride Int': 'StrideLocalInt_results.csv',
     'Stride Char': 'StrideLocalChar_results.csv'#,
     #'Stride Long': 'StrideLocalLong_results.csv'
@@ -19,7 +19,7 @@ kmp = {
 
 }
 
-files = stride
+files = kmp
 
 dfs = []
 
@@ -77,5 +77,5 @@ plt.legend(title='Implementazione', bbox_to_anchor=(1.05, 1), loc='upper left')
 
 # 8. Salvataggio del grafico
 plt.tight_layout()
-plt.savefig('confronto_throughput_aggiornato.png', dpi=300)
+plt.savefig('confronto_TH_KMP.png', dpi=300)
 plt.show()
