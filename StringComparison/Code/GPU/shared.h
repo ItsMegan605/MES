@@ -39,7 +39,8 @@ enum {
     EXE_NAME,
     TARGET_STRING,
     THREADS_PER_BLOCK,
-    FILE_LIMIT
+    FILE_LIMIT,
+    SHARED_MEM_LIMIT
 };
 
 

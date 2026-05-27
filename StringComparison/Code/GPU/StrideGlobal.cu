@@ -23,7 +23,7 @@ void implementationDependantManagement(){
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceId);
 
-    shared_memory_size = threadsPerBlock + target_string_len - 1;
+    shared_memory_size = 0;
 
     
     // Chiediamo a CUDA: "Dato il mio threadsPerBlock, quanti blocchi posso 
@@ -81,34 +81,18 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     if(block_pos == 0)
         shared_occurrences = 0;
 
-    u64 numPrelievi = blockDim.x + d_target_string_len - 1;
-    u64 prelieviLeft;
-    u64 thisPrelievi;
-
     for(u64 k = global_id, blk = block_start; blk < d_totalThreads ; k += stride, blk += stride){
-
-        // gestire caso stringa lunga o blocco piccolo
-        prelieviLeft = d_file_size - blk;
-        
-        thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
-
-        for (u32 i = block_pos; i < (u32)thisPrelievi; i += blockDim.x) {
-            shared_buffer[i] = file_buffer[blk + i];
-        }
-
-        __syncthreads();
         
         if(k < d_totalThreads){
             u32 i = 0;
             for(; i < d_target_string_len; i++){
-                if(d_target_string[i] != shared_buffer[block_pos + i])
+                if(d_target_string[i] != file_buffer[k + i])
                 break;
             }
             if(i == d_target_string_len)
                 my_occurrences++;
         }
 
-        __syncthreads();
     }
     
     if(my_occurrences > 0)

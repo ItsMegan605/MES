@@ -144,13 +144,18 @@ int main(int argc, char* argv[]) {
     // we allocate and load all values into VRAM
     gpuMemoryInit();
 
-    int deviceId;
-    cudaGetDevice(&deviceId); 
+    if(argc > SHARED_MEM_LIMIT){ //se ho più di 4 argomenti
+        sharedMemLimit = (u32)std::strtoull(argv[SHARED_MEM_LIMIT], nullptr, 10);
+    }else{
 
-    cudaDeviceProp props;
-    cudaGetDeviceProperties(&props, deviceId);
-
-    sharedMemLimit = props.sharedMemPerMultiprocessor / 1024 / 2; // 48kb
+        int deviceId;
+        cudaGetDevice(&deviceId); 
+        
+        cudaDeviceProp props;
+        cudaGetDeviceProperties(&props, deviceId);
+        
+        sharedMemLimit = props.sharedMemPerMultiprocessor / 1024 / 2; // 48kb
+    }
 
     // threads and shared memory are managed depending on the implementation
     implementationDependantManagement();
