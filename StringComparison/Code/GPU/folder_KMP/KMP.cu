@@ -10,14 +10,6 @@
 
 #endif
 
-#ifndef VARS
-
-    #define TYPE u64
-    #define EXP 3
-    #define ROUND roundToEight
-
-#endif
-
 void build_table(int len){
 
     longest_prefix_suffix_array = new int[len];
@@ -79,18 +71,15 @@ void implementationDependantManagement(){
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, deviceId);
     
-    #ifdef MAX_OCCUPANCY
-        // Chiediamo a CUDA quanti blocchi ci stanno con questa shared memory
-        cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-            &numBlocksPerSm, 
-            parallelStringSearch, 
-            threadsPerBlock, 
-            128 
-        );  
+    // Chiediamo a CUDA quanti blocchi ci stanno con questa shared memory
+    cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &numBlocksPerSm, 
+        parallelStringSearch, 
+        threadsPerBlock, 
+        128 
+    );  
 
-    #endif
-    
-    shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
+    shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
             
@@ -99,7 +88,8 @@ void implementationDependantManagement(){
     //u64 totalThreads = blocksPerGrid * threadsPerBlock;
     
 
-    const u64 chunk_step = ((shared_memory_size - target_string_len + 1)  >> EXP) << EXP;    
+    const u64 chunk_step = shared_memory_size - target_string_len + 1;
+    
     // GEMINI: Dividiamo solo lo spazio utile (chunk_step) tra i thread
     const u64 memory_for_thread = (chunk_step + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -142,20 +132,14 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
         
         // Evitiamo di leggere oltre la fine del file
-        u64 limPrelievo = d_shared_memory_size; //vedo i byte ancora da trasf
-        
+        u64 limPrelievo = d_shared_memory_size;
         if(startPrelievo + limPrelievo > d_file_size) {
             limPrelievo = d_file_size - startPrelievo;
         }
 
-        u64 limPrelievoLarge = ROUND(limPrelievo) >> EXP;
-        u64 startPrelievoLarge = ROUND(startPrelievo) >> EXP;
-
-        // gli accessi saranno sempre allineati a 4, qui cerco TYPE
-        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievoLarge; thisPrelievo += blockDim.x){
-            ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievoLarge) + thisPrelievo];
+        for(u64 thisPrelievo = block_pos; thisPrelievo < limPrelievo; thisPrelievo += blockDim.x){
+            shared_buffer[thisPrelievo] = file_buffer[startPrelievo + thisPrelievo];
         }
-
 
         __syncthreads();
 
@@ -188,6 +172,17 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
                     search_limit = (d_target_string_len - 1 < remaining_after_end) ? (d_target_string_len - 1) : remaining_after_end;
                 }
                 // FIN QUA
+
+                /*
+                // IL NOSTRO
+                if(file_remainder <= d_memory_for_thread){
+                    search_end += file_remainder;
+                }else{
+                    search_end += d_memory_for_thread;
+                    search_limit = min((u64)(d_target_string_len - 1), file_remainder - d_memory_for_thread);
+                }
+                //FIN QUA
+                */
 
                 search_limit += search_end;
 

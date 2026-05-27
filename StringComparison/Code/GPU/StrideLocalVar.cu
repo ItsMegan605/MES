@@ -40,15 +40,12 @@ void implementationDependantManagement(){
         );  
 
     #endif
-    
     //shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
-    shared_memory_size = (64*1024) / numBlocksPerSm;
-
-    
+    shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;
 
-    cout << "Blocchi per SM: " << numBlocksPerSm << endl;
+    cout << "Blocchi per SM teorici: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
 
     // Interroghiamo gli attributi specifici del nostro kernel
@@ -62,7 +59,20 @@ void implementationDependantManagement(){
             
     // Calcoliamo la griglia totale
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
-    //u64 totalThreads = blocksPerGrid * threadsPerBlock;
+    
+    #ifdef MAX_OCCUPANCY
+
+        // Chiediamo a CUDA quanti blocchi ci stanno con questa shared memory
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+            &numBlocksPerSm, 
+            parallelStringSearch, 
+            threadsPerBlock, 
+            128 
+        );  
+
+        cout << "Blocchi per SM effettivi: " << numBlocksPerSm << endl;
+
+    #endif
 
     //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
     cudaMemcpyToSymbol(d_shared_memory_size, &shared_memory_size, sizeof(u64));

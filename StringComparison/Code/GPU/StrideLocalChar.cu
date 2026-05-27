@@ -33,7 +33,7 @@ void implementationDependantManagement(){
         128 
     );  
     
-    shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
+    shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
             

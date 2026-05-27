@@ -144,6 +144,14 @@ int main(int argc, char* argv[]) {
     // we allocate and load all values into VRAM
     gpuMemoryInit();
 
+    int deviceId;
+    cudaGetDevice(&deviceId); 
+
+    cudaDeviceProp props;
+    cudaGetDeviceProperties(&props, deviceId);
+
+    sharedMemLimit = props.sharedMemPerMultiprocessor / 1024 / 2; // 48kb
+
     // threads and shared memory are managed depending on the implementation
     implementationDependantManagement();
 

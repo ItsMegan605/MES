@@ -79,18 +79,19 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     if(block_pos == 0)
         shared_occurrences = 0;
 
-    u32 numPrelievi = roundToFour(blockDim.x + d_target_string_len -1)/4;
+    u32 numPrelievi = blockDim.x + d_target_string_len -1;
     u32 prelieviLeft;
     u32 thisPrelievi;
 
     for(u64 k = global_id, blk = block_start; blk < d_file_size ; k += stride, blk += stride){
 
         // gestire caso stringa lunga o blocco piccolo
-        prelieviLeft = roundToFour(d_file_size - blk)/4;
+        prelieviLeft = d_file_size - blk;
         
         thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;
-        if(block_pos < thisPrelievi){
-                shared_buffer[block_pos] = file_buffer[blk + block_pos];
+
+        for (u32 i = block_pos; i < thisPrelievi; i += blockDim.x) {
+            shared_buffer[i] = file_buffer[blk + i];
         }
 
         // abbiamo durante il for un 4-way-bank conflict. chiede di leggere 4 byte per volta, in modo da renderlo

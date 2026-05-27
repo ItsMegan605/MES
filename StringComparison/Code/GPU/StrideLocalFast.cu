@@ -12,9 +12,9 @@
 
 #ifndef VARS
 
-    #define TYPE uint4
-    #define EXP 4
-    #define ROUND roundToSixteen
+    #define TYPE u64
+    #define EXP 3
+    #define ROUND roundToEight
 
 #endif
 //NB: le var con d sono la "copia" dei parametri CPU
@@ -41,7 +41,7 @@ void implementationDependantManagement(){
 
     #endif
     
-    shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
+    shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     
     // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;

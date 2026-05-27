@@ -56,6 +56,9 @@ char* target_string;
 // number of blocks per SM
 int numBlocksPerSm;
 
+// Max memory limiter for the shared memory in kb
+u32 sharedMemLimit;
+
 // kmp
 int* longest_prefix_suffix_array = nullptr;
 

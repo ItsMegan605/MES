@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <locale>
 
-
 // Funzioni preesistenti (le assumiamo incluse via shared.cu/h)
 void implementationDependantManagement();
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences);
@@ -25,9 +24,6 @@ __host__ __device__ inline T roundToSixteen(T value){
     return (value + 15) & ~ (T)15;
 }
 
-
-
-
 bool read_file_from_disk(){
     
     std::ifstream file(FILE_PATH, std::ios::binary);
@@ -40,7 +36,6 @@ bool read_file_from_disk(){
     file_buffer = new char[file_size];
     
     // we read one file block at the time, due to windows file size constraints
-    
     u64 bytes_left = file_size;
     char* buffer_offset = file_buffer;
     
@@ -64,8 +59,6 @@ bool read_file_from_disk(){
     return true;
 }
 
-
-
 // Hack per forzare la virgola per i decimali invece del punto (per Excel in Italiano)
 struct comma_facet : std::numpunct<char> {
     char do_decimal_point() const override { return ','; }
@@ -77,28 +70,32 @@ int main(int argc, char* argv[]) {
         cout<<"metti il nome del file .csv"<<endl;
     }
 
+    
     char * output_file = new char[strlen("csv/")+ strlen(argv[1]) + 5]; // + .csv + \0
     strcpy(output_file,"csv/");
     strcpy(output_file + strlen("csv/") ,argv[1]);
     strcpy(output_file + strlen("csv/") + strlen(argv[1]), ".csv");
 
     // 1. Setup Configurazioni del Benchmark
-    std::vector<std::string> strings = {"abracadabra", "------------"}; //{"abracadabra", "unevenstring", "------------"};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416};
-    std::vector<int> nblocks = {24};
+    std::vector<std::string> strings = {"abracadabra", "------------"};
     std::vector<u64> file_sizes_mb = {7000};
-
-    const int runs = 30; // MI SE CAMBI
+    
+    // Nuovi vettori per i cicli annidati completi
+    std::vector<u32> shared_mem_limits = {16,32,48,64, 80, 96};
+    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
+    std::vector<int> nblocks = {1}; // Valori di esempio
+    
+    const int runs = 30;
 
     // 2. Setup del file CSV
     std::ofstream csv(output_file);
     if (!csv) {
-        cerr << "Errore: impossibile creare benchmark_results.csv\n";
+        cerr << "Errore: impossibile creare <<"<< output_file<<endl;
         return 1;
     }
     // Applica la formattazione italiana (virgola per i decimali)
     csv.imbue(std::locale(csv.getloc(), new comma_facet()));
-    csv << "stringa cercata;thread per blocco;ripetizione;dimensione file;throughput\n";
+    csv << "stringa cercata;limite shared mem;thread per blocco;blocchi per SM;ripetizione;dimensione file;throughput\n";
 
     // 3. Lettura del file originale da disco (FATTA UNA SOLA VOLTA)
     u64 actual_file_size;
@@ -142,57 +139,56 @@ int main(int argc, char* argv[]) {
             cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
             cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
-            #ifdef MAX_OCCUPANCY
-            for(u64 t : threads) {
-                threadsPerBlock = t;
-            #else 
+            for(u32 sm_limit : shared_mem_limits) {
+                // Impostazione limite memoria condivisa
+                sharedMemLimit = sm_limit;
 
-                threadsPerBlock = threads[0];
-            for(int b : nblocks) {
-                numBlocksPerSm = b;
-            
-            #endif
-                // Calcola gridDim e shared_memory in base ai nuovi threadsPerBlock
-                implementationDependantManagement(); 
+                for(u64 t : threads) {
+                    threadsPerBlock = t;
+                    
+                    for(int b : nblocks) {
+                        numBlocksPerSm = b;
                 
-                for(int r = 1; r <= runs; r++) {
-                    
-                    // Reset delle occorrenze a 0 per la nuova run
-                    cudaMemset((void *)d_occurrences, 0, sizeof(u64));
-                    cudaDeviceSynchronize();
+                        // Calcola gridDim e shared_memory in base ai nuovi parametri
+                        implementationDependantManagement(); 
+                        
+                        for(int r = 1; r <= runs; r++) {
+                            
+                            // Reset delle occorrenze a 0 per la nuova run
+                            cudaMemset((void *)d_occurrences, 0, sizeof(u64));
+                            cudaDeviceSynchronize();
 
-                    auto start = std::chrono::steady_clock::now();
-                    
-                    // Lancio del kernel
-                    parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
-                    cudaDeviceSynchronize();
+                            auto start = std::chrono::steady_clock::now();
+                            
+                            // Lancio del kernel
+                            parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
+                            cudaDeviceSynchronize();
 
-                    auto end = std::chrono::steady_clock::now();
-                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                            auto end = std::chrono::steady_clock::now();
+                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-                    // Calcolo Throughput (Bytes per second, convertibile in MB/s a piacimento)
-                    double throughput = ((double)file_size / duration.count()) * 1000.0;
+                            // Calcolo Throughput (Bytes per second, convertibile in MB/s a piacimento)
+                            double throughput = ((double)file_size / duration.count()) * 1000.0;
 
-                    // Salvataggio nel file CSV
-                    csv << str << ";" 
-                        #ifdef MAX_OCCUPANCY
-                            << threadsPerBlock << ";" 
-                        #else
-                            << numBlocksPerSm << ";" 
-                        #endif
-                        << r << ";" 
-                        << fs_mb << ";" 
-                        << std::fixed << std::setprecision(2) << throughput << "\n";
-                    
-                    // Stampa a schermo per farti vedere che è vivo
-                    cout << "Completata Run " << r << "/30 | Str: " << str
-                        #ifdef MAX_OCCUPANCY 
-                            << " | Thr: " << threadsPerBlock 
-                         #else
-                            << " | blocchi: " << numBlocksPerSm 
-                         #endif
-                         << " | Size: " << fs_mb 
-                         << "MB | Throughput: " << throughput << endl;
+                            // Salvataggio nel file CSV
+                            csv << str << ";" 
+                                << sharedMemLimit << ";"
+                                << threadsPerBlock << ";" 
+                                << numBlocksPerSm << ";" 
+                                << r << ";" 
+                                << fs_mb << ";" 
+                                << std::fixed << std::setprecision(2) << throughput << "\n";
+                            
+                            // Stampa a schermo
+                            cout << "Completata Run " << r << "/" << runs 
+                                 << " | Str: " << str
+                                 << " | SM Limit: " << sharedMemLimit
+                                 << " | Thr: " << threadsPerBlock 
+                                 << " | Blocchi: " << numBlocksPerSm 
+                                 << " | Size: " << fs_mb 
+                                 << "MB | Throughput: " << throughput << endl;
+                        }
+                    }
                 }
             }
         }
@@ -200,11 +196,12 @@ int main(int argc, char* argv[]) {
 
     // 6. Cleanup finale
     csv.close();
+    delete[] output_file; // Aggiunto per evitare memory leak di output_file
     delete[] file_buffer;
     cudaFree((void*)d_file_buffer);
     cudaFree((void*)d_occurrences);
     if(longest_prefix_suffix_array) delete[] longest_prefix_suffix_array;
     
-    cout << "\nBOOM! Benchmark completato con successo. Risultati salvati in benchmark_results.csv" << endl;
+    cout << "\nBOOM! Benchmark completato con successo. Risultati salvati in " << argv[1] << ".csv" << endl;
     return 0;
 }
