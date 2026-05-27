@@ -41,7 +41,9 @@ void implementationDependantManagement(){
 
     #endif
     
-    shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
+    //shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
+    shared_memory_size = (64*1024) / numBlocksPerSm;
+
     
     // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;
