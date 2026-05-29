@@ -77,13 +77,15 @@ int main(int argc, char* argv[]) {
     strcpy(output_file + strlen("csv/") + strlen(argv[1]), ".csv");
 
     // 1. Setup Configurazioni del Benchmark
-    std::vector<std::string> strings = {"abracadabra", "------------"};
-    std::vector<u64> file_sizes_mb = {7000};
+    std::vector<std::string> strings = {"unevenstring"};
+    std::vector<u64> file_sizes_mb = {4000};
     
     // Nuovi vettori per i cicli annidati completi
-    std::vector<u32> shared_mem_limits = {16,32,48,64, 80, 96};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
-    std::vector<int> nblocks = {1}; // Valori di esempio
+    std::vector<u32> shared_mem_limits = {64};
+   // std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
+    std::vector<u64> threads = {256};
+    std::vector<int> nblocks = {1,2,3,4,5,6,7,8}; // Valori di esempio
+
     
     const int runs = 30;
 

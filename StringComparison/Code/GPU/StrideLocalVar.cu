@@ -48,6 +48,8 @@ void implementationDependantManagement(){
     cout << "Blocchi per SM teorici: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
 
+    //numBlocksPerSm *= 2; // numero di ondate
+
     // Interroghiamo gli attributi specifici del nostro kernel
     cudaFuncAttributes attr;
     cudaFuncGetAttributes(&attr, parallelStringSearch);
@@ -67,7 +69,7 @@ void implementationDependantManagement(){
             &numBlocksPerSm, 
             parallelStringSearch, 
             threadsPerBlock, 
-            128 
+            shared_memory_size
         );  
 
         cout << "Blocchi per SM effettivi: " << numBlocksPerSm << endl;
