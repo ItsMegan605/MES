@@ -39,16 +39,20 @@ void implementationDependantManagement(){
             128 
         );  
 
+        
     #endif
+    int target_blocks = numBlocksPerSm; // debug
+    
     //shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
     shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;
 
-    cout << "Blocchi per SM teorici: " << numBlocksPerSm << endl;
-    cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
 
-    //numBlocksPerSm *= 2; // numero di ondate
+    cout << "Blocchi per SM teorici: " << numBlocksPerSm << endl;
+    cout << "Memoria Condivisa per Blocco: " << shared_memory_size  << " B" << endl;
+
+    numBlocksPerSm *= 1; // numero di ondate
 
     // Interroghiamo gli attributi specifici del nostro kernel
     cudaFuncAttributes attr;
@@ -78,6 +82,43 @@ void implementationDependantManagement(){
 
     //cudaMemcpyToSymbol(d_totalThreads, &totalThreads, sizeof(u64));
     cudaMemcpyToSymbol(d_shared_memory_size, &shared_memory_size, sizeof(u64));
+
+    // COSE DA TOGLIERE
+    
+    int max_smem_per_block_allowed = 0;
+
+    // Partiamo da un'ipotesi molto alta (es. 16 KB a blocco) e scendiamo a step di 256 byte
+    for (int smem_test = 100*1024; smem_test >= 0; smem_test -= 256) {
+        int active_blocks;
+        
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+            &active_blocks, 
+            parallelStringSearch, 
+            threadsPerBlock, 
+            smem_test
+        );
+
+        // Appena CUDA ci conferma che a questa dimensione i 12 blocchi sopravvivono, ci fermiamo.
+        if (active_blocks >= target_blocks) {
+            max_smem_per_block_allowed = smem_test;
+            break;
+        }
+    }
+
+    // Ora calcoliamo l'overhead esatto
+    int total_physical_smem = props.sharedMemPerMultiprocessor; // I tuoi ~100KB o 128KB fisici
+    int max_usable_smem = max_smem_per_block_allowed * target_blocks;
+    int driver_overhead = total_physical_smem - max_usable_smem;
+
+    cout << "--- ANALISI OVERHEAD HARDWARE ---" << endl;
+    cout << "Memoria fisica totale dell'SM: " << total_physical_smem << " bytes" << endl;
+    cout << "Limite massimo consentito per blocco (per avere " << target_blocks << " blocchi): " 
+        << max_smem_per_block_allowed << " bytes" << endl;
+    cout << "Memoria utile totale per i "<< target_blocks <<" blocchi: " << max_usable_smem << " bytes (" << max_usable_smem / 1024 << " KB )" << endl;
+    cout << "OVERHEAD (Spazio rubato da Driver/L1/Metadati): " << driver_overhead << " bytes (" 
+        << driver_overhead / 1024.0 << " KB)" << endl;
+    cout << "---------------------------------" << endl;
+
 }
 
 

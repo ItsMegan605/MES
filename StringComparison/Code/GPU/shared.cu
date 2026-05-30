@@ -147,14 +147,8 @@ int main(int argc, char* argv[]) {
     if(argc > SHARED_MEM_LIMIT){ //se ho più di 4 argomenti
         sharedMemLimit = (u32)std::strtoull(argv[SHARED_MEM_LIMIT], nullptr, 10);
     }else{
-
-        int deviceId;
-        cudaGetDevice(&deviceId); 
         
-        cudaDeviceProp props;
-        cudaGetDeviceProperties(&props, deviceId);
-        
-        sharedMemLimit = props.sharedMemPerMultiprocessor / 1024 / 2; // 48kb
+        sharedMemLimit = 87*1024;
     }
 
     // threads and shared memory are managed depending on the implementation

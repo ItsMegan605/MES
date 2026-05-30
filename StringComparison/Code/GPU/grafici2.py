@@ -53,96 +53,54 @@ for csv_file in csv_files:
         print(f"Salto il file {csv_file}: nessun dato valido rimasto per 'unevenstring'.")
         continue
 
-    # Verifica preliminare delle colonne necessarie
-    required_cols = ['stringa cercata', 'limite shared mem', 'thread per blocco', 'throughput']
+    # Verifica preliminare delle colonne necessarie (limite shared mem rimosso dai requisiti stretti)
+    required_cols = ['stringa cercata', 'thread per blocco', 'throughput']
     if not all(col in df.columns for col in required_cols):
         print(f"Salto il file {csv_file}: colonne necessarie mancanti.")
         continue
         
     # Crea la cartella specifica per questo CSV dentro la cartella base plots
-    # os.path.basename serve per prendere solo il nome del file senza tutto il percorso
     csv_name = os.path.splitext(os.path.basename(csv_file))[0]
     output_dir = os.path.join(base_plots_dir, csv_name)
     os.makedirs(output_dir, exist_ok=True)
     
-    # Calcolo della scala Y fissa basata sull'intero dataset (per il confronto)
+    # Calcolo della scala Y fissa basata sull'intero dataset
     t_min = df['throughput'].min()
     t_max = df['throughput'].max()
     ymin = 0 if t_min >= 0 else t_min * 1.1
     ymax = t_max * 1.15 if t_max > 0 else 1.0  # +15% di margine
     
-    # Ottieni i valori unici per generare i vari grafici
-    unique_limits = sorted(df['limite shared mem'].unique())
+    # Ottieni i valori unici dei thread per impostare le etichette sull'asse X
     unique_threads = sorted(df['thread per blocco'].unique())
     
     # =========================================================================
-    # GRAFICO 1: GRAFICI INDIVIDUALI (divisi per limite shared memory)
+    # GRAFICO UNICO: Throughput vs Thread per Blocco
     # =========================================================================
-    print(f"-> Generazione grafici singoli per Limite Shared Mem ({len(unique_limits)} immagini distinte)...")
-    for limite in unique_limits:
-        df_sub = df[df['limite shared mem'] == limite]
-        
-        if df_sub.empty:
-            continue
-            
-        plt.figure(figsize=(8, 6))
-        
-        ax = sns.lineplot(
-            data=df_sub,
-            x="thread per blocco",
-            y="throughput",
-            marker="o",
-            color="royalblue", # Colore fisso per il plot singolo
-            errorbar=('ci', 95),  
-            err_style="bars",     
-            err_kws={'capsize': 4} 
-        )
-        
-        ax.set_xlabel("Thread per Blocco")
-        ax.set_ylabel("Throughput Medio (con CI 95%)")
-        ax.set_title(f"Limite Shared Mem: {limite}\n(Stringa: 'unevenstring')")
-        ax.set_ylim(ymin, ymax)
-        ax.set_xticks(unique_threads)
-        ax.tick_params(axis='x', rotation=45)
-        
-        filename_png = f"grafico_singolo_limite_{limite}.png"
-        filepath = os.path.join(output_dir, filename_png)
-        
-        plt.savefig(filepath, dpi=300, bbox_inches='tight')
-        plt.close()
-        
-    # =========================================================================
-    # GRAFICO 2: GRAFICO COMPLETO (Tutti i limiti a confronto)
-    # =========================================================================
-    print(f"-> Generazione grafico COMPLETO per tutti i limiti di Shared Mem...")
+    print(f"-> Generazione del grafico unico per Thread per Blocco...")
     
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 6))
     
     ax = sns.lineplot(
         data=df,
         x="thread per blocco",
         y="throughput",
-        hue="limite shared mem", # Crea linee diverse per ogni limite
         marker="o",
-        palette="tab10",
-        errorbar=('ci', 95),   
-        err_style="bars",      
-        err_kws={'capsize': 4}  
+        color="royalblue",     # Colore unico poiché non differenziamo per la memoria
+        errorbar=('ci', 95),  
+        err_style="bars",     
+        err_kws={'capsize': 4} 
     )
     
-    ax.set_xlabel("Thread per Blocco")
-    ax.set_ylabel("Throughput Medio (con CI 95%)")
-    ax.set_title(f"Confronto Completo - Limiti Shared Memory\n(Stringa: 'unevenstring')")
+    ax.set_xlabel("Thread per Blocco", fontsize=12)
+    ax.set_ylabel("Throughput Medio (con CI 95%)", fontsize=12)
+    ax.set_title(f"Throughput al variare dei Thread\n(File: {csv_name} - Dim. 4000MB)", fontsize=14, pad=15)
     
     ax.set_ylim(ymin, ymax)
     ax.set_xticks(unique_threads)
     ax.tick_params(axis='x', rotation=45)
     
-    # Aggiorna la legenda
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels, title="Limite Shared Mem", bbox_to_anchor=(1.05, 1), loc='upper left')
-    
-    filename_png = f"grafico_completo_confronto_limiti.png"
+    # Salvataggio del singolo grafico
+    filename_png = f"{csv_name}_throughput_vs_threads.png"
     filepath = os.path.join(output_dir, filename_png)
     
     plt.savefig(filepath, dpi=300, bbox_inches='tight')

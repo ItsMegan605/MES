@@ -52,15 +52,20 @@ int main() {
         std::cout << "[Architettura e Calcolo]\n";
         std::cout << "  Compute Capability:                            " << deviceProp.major << "." << deviceProp.minor << "\n";
         std::cout << "  Numero di Multiprocessori (SM):                " << deviceProp.multiProcessorCount << "\n";
-        std::cout << "  Clock Rate dei Core:                           " << clockRateKHz / 1000 << " MHz\n\n";
+        std::cout << "  Clock Rate dei Core:                           " << clockRateKHz << " kHz\n\n";
 
         // --- Gerarchia di Memoria ---
         std::cout << "[Gerarchia di Memoria]\n";
-        std::cout << "  Memoria Globale Totale:                        " << deviceProp.totalGlobalMem / (1024 * 1024) << " MB\n";
-        std::cout << "  Memoria Costante Totale:                       " << deviceProp.totalConstMem / 1024 << " KB\n";
-        std::cout << "  Memoria Condivisa (Shared) per Blocco:         " << deviceProp.sharedMemPerBlock / 1024 << " KB\n";
-        std::cout << "  Dimensione Cache L2:                           " << l2CacheSize / (1024 * 1024) << " MB\n";
-        std::cout << "  Clock Rate della Memoria:                      " << memoryClockRateKHz / 1000 << " MHz\n";
+        std::cout << "  Memoria Globale Totale:                        " << deviceProp.totalGlobalMem << " byte\n";
+        std::cout << "  Memoria Costante Totale:                       " << deviceProp.totalConstMem << " byte\n";
+        
+        // Proprietà specifiche della Shared Memory (Valori esatti in byte)
+        std::cout << "  Memoria Condivisa (Shared) per Blocco:         " << deviceProp.sharedMemPerBlock << " byte\n";
+        std::cout << "  Memoria Condivisa (Shared) per SM:             " << deviceProp.sharedMemPerMultiprocessor << " byte\n";
+        std::cout << "  Memoria Condivisa (Shared) max Opt-in/Blocco:  " << deviceProp.sharedMemPerBlockOptin << " byte\n";
+        
+        std::cout << "  Dimensione Cache L2:                           " << l2CacheSize << " byte\n";
+        std::cout << "  Clock Rate della Memoria:                      " << memoryClockRateKHz << " kHz\n";
         std::cout << "  Ampiezza Bus di Memoria:                       " << memoryBusWidth << "-bit\n\n";
 
         // --- Limiti di Esecuzione (Thread, Blocchi, Griglie) ---
