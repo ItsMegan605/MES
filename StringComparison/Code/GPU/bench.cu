@@ -183,12 +183,12 @@ int main(int argc, char* argv[]) {
                             
                             // Stampa a schermo
                             cout << "Completata Run " << r << "/" << runs 
-                                 << " | Str: " << str
-                                 << " | SM Limit: " << sharedMemLimit
-                                 << " | Thr: " << threadsPerBlock 
-                                 << " | Blocchi: " << numBlocksPerSm 
-                                 << " | Size: " << fs_mb 
-                                 << "MB | Throughput: " << throughput << endl;
+                                << " | Str: " << str
+                                << " | SM Limit: " << sharedMemLimit
+                                << " | Thr: " << threadsPerBlock 
+                                << " | Blocchi: " << numBlocksPerSm 
+                                << " | Size: " << fs_mb 
+                                << "MB | Throughput: " << throughput << endl;
                         }
                     }
                 }

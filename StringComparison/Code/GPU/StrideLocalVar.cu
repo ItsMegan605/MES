@@ -45,7 +45,7 @@ void implementationDependantManagement(){
     
     //shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
     shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
-    // GEMINI: FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
+    // : FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;
 
 
@@ -110,6 +110,8 @@ void implementationDependantManagement(){
     int max_usable_smem = max_smem_per_block_allowed * target_blocks;
     int driver_overhead = total_physical_smem - max_usable_smem;
 
+    cout<< "Memoria richiesta per SM: "<< sharedMemLimit<< " KB"<<endl;
+
     cout << "--- ANALISI OVERHEAD HARDWARE ---" << endl;
     cout << "Memoria fisica totale dell'SM: " << total_physical_smem << " bytes" << endl;
     cout << "Limite massimo consentito per blocco (per avere " << target_blocks << " blocchi): " 
@@ -128,7 +130,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
     const u32 block_pos = threadIdx.x; // id del thread nel blocco
     
-    // GEMINI DICE: Poiché d_shared_memory_size è multiplo di 16 e d_target_string_len 
+    // Poiché d_shared_memory_size è multiplo di 16 e d_target_string_len 
     // viene arrotondato a 16, chunk_step sarà SEMPRE multiplo di 16.
     // Di conseguenza, startPrelievo sarà sempre perfettamente allineato!
 
@@ -138,7 +140,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     const u64 chunk_step = d_shared_memory_size - overlap;
     const u64 block_jump = chunk_step * gridDim.x;
     
-    u32 my_occurrences = 0; // gemini dice sia piu veloce un registro a 4 byte
+    u32 my_occurrences = 0; //  dice sia piu veloce un registro a 4 byte
 
     for(u64 startPrelievo = chunk_step * blockIdx.x; startPrelievo < d_file_size; startPrelievo += block_jump){
         
@@ -159,6 +161,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             ((TYPE*)shared_buffer)[thisPrelievo] = ((TYPE*)file_buffer)[(startPrelievoLarge) + thisPrelievo];
         }
 
+        
         __syncthreads();
 
         if(limPrelievo >= d_target_string_len){
@@ -176,11 +179,11 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
                 if(i == d_target_string_len)
                     my_occurrences++; // se trovo occorrenza
             }
-        }
-        
+        }     
         __syncthreads();
-    }
+    } 
 
+    
     u64 * shared_occurrences = (u64*)shared_buffer;
     
     if(block_pos == 0) {
@@ -198,4 +201,5 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     if(block_pos == 0 && *shared_occurrences > 0) {
         atomicAdd(occurrences, *shared_occurrences);
     }
+    
 }

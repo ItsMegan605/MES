@@ -75,13 +75,13 @@ int main() {
         std::cout << "  Thread massimi per Multiprocessore (SM):       " << deviceProp.maxThreadsPerMultiProcessor << "\n";
         std::cout << "  Thread massimi per Blocco:                     " << deviceProp.maxThreadsPerBlock << "\n";
         std::cout << "  Dimensione max del Blocco (x, y, z):           (" 
-                  << deviceProp.maxThreadsDim[0] << ", " 
-                  << deviceProp.maxThreadsDim[1] << ", " 
-                  << deviceProp.maxThreadsDim[2] << ")\n";
+                << deviceProp.maxThreadsDim[0] << ", " 
+                << deviceProp.maxThreadsDim[1] << ", " 
+                << deviceProp.maxThreadsDim[2] << ")\n";
         std::cout << "  Dimensione max della Griglia (x, y, z):        (" 
-                  << deviceProp.maxGridSize[0] << ", " 
-                  << deviceProp.maxGridSize[1] << ", " 
-                  << deviceProp.maxGridSize[2] << ")\n\n";
+                << deviceProp.maxGridSize[0] << ", " 
+                << deviceProp.maxGridSize[1] << ", " 
+                << deviceProp.maxGridSize[2] << ")\n\n";
 
         // --- Occupazione Reale Calcolata ---
         std::cout << "[Occupazione Reale Stimata]\n";

@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
         sharedMemLimit = (u32)std::strtoull(argv[SHARED_MEM_LIMIT], nullptr, 10);
     }else{
         
-        sharedMemLimit = 87*1024;
+        sharedMemLimit = 87;
     }
 
     // threads and shared memory are managed depending on the implementation
