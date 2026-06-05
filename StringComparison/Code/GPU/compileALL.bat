@@ -10,7 +10,7 @@ for %%f in (%FILES%) do (
     echo Compilazione di %%f.cu in corso...
     
     :: Compila il file CUDA con lo standard C++17
-    nvcc -std=c++17 %%f.cu -o %%f.exe
+    nvcc -lineinfo -std=c++17 %%f.cu -o %%f.exe
     
     :: Controlla se la compilazione è andata a buon fine
     if !errorlevel! equ 0 (

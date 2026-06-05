@@ -37,7 +37,7 @@ void implementationDependantManagement(){
     shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
     cout << "Blocchi per SM: " << numBlocksPerSm << endl;
     cout << "Memoria Condivisa per Blocco: " << shared_memory_size / 1024 << " KB" << endl;
-            
+    
     // Calcoliamo la griglia totale
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
     //u64 totalThreads = blocksPerGrid * threadsPerBlock;
@@ -74,7 +74,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             shared_buffer[thisPrelievo] = file_buffer[startPrelievo + thisPrelievo];
         }
 
-        /*
+        
         __syncthreads();
 
         if(limPrelievo >= d_target_string_len) {
@@ -91,11 +91,11 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
         }
         
         __syncthreads();
-        */
+        
     }
 
-    /*
     u64 * shared_occurrences = (u64*)shared_buffer;
+    
     
     if(block_pos == 0) {
         *shared_occurrences = 0;
@@ -112,5 +112,5 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
     if(block_pos == 0 && *shared_occurrences > 0) {
         atomicAdd(occurrences, *shared_occurrences);
     }
-    */
+    
 }
