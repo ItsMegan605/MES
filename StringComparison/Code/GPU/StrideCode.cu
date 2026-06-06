@@ -96,7 +96,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             shared_buffer[i] = file_buffer[blk + i];
         }
 
-        
+        /*
         __syncthreads();
         
         if(k < d_totalThreads){
@@ -109,10 +109,11 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
                 my_occurrences++;
         }
 
-        __syncthreads();
+    __syncthreads();
         
+    */
     }
-    
+    /*
     if(my_occurrences > 0)
         atomicAdd(&shared_occurrences,my_occurrences);
 
@@ -120,7 +121,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
     if(block_pos == 0 && shared_occurrences > 0)
         atomicAdd(occurrences,shared_occurrences);
-    
+    */
 }
 
 int main(int argc, char* argv[]);

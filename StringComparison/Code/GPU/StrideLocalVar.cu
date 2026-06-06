@@ -181,6 +181,7 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
             }
         }     
         __syncthreads();
+        
     } 
 
     

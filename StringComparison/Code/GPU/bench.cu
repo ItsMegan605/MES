@@ -78,12 +78,12 @@ int main(int argc, char* argv[]) {
 
     // 1. Setup Configurazioni del Benchmark
     std::vector<std::string> strings = {"unevenstring"};
-    std::vector<u64> file_sizes_mb = {7000};
+    std::vector<u64> file_sizes_mb = {4000};
     
     // Nuovi vettori per i cicli annidati completi
-    std::vector<u32> shared_mem_limits = {87}; 
+    std::vector<u32> shared_mem_limits = {72};//{72, 84,87,90,92, 93, 95}; 
    // std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
+    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288 };
     std::vector<int> nblocks = {1}; // Valori di esempio
 
     

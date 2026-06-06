@@ -43,7 +43,7 @@ def main():
     ax.axhline(y=24, color='red', linestyle='--', linewidth=1.5, zorder=2, label='Architectural Limit (24)')
 
     ax.plot(x_pos, df['Numero_Blocchi'], 
-             marker='o', markersize=6, color=line_color, linestyle='-', linewidth=2, zorder=3, label='Blocchi Attivi (Occupancy)')
+            marker='o', markersize=6, color=line_color, linestyle='-', linewidth=2, zorder=3, label='Blocchi Attivi (Occupancy)')
     
     ax.set_title('Relazione tra Thread per Blocco e Numero di Blocchi Max\nLimite Architetturale: 1024 Thread', fontsize=14, pad=15)
     ax.set_xlabel('Numero di Thread per Blocco', fontsize=12, labelpad=10)
@@ -70,13 +70,13 @@ def main():
     # --- ETICHETTE VALORI SUI PUNTI ---
     for i, row in df.iterrows():
         ax.annotate(f"{int(row['Numero_Blocchi'])}",
-                     (x_pos[i], row['Numero_Blocchi']),
-                     textcoords="offset points",
-                     xytext=(0, 10),
-                     ha='center',
-                     fontsize=10,
-                     fontweight='bold',
-                     color='#333333')
+                    (x_pos[i], row['Numero_Blocchi']),
+                    textcoords="offset points",
+                    xytext=(0, 10),
+                    ha='center',
+                    fontsize=10,
+                    fontweight='bold',
+                    color='#333333')
 
     # Aggiungiamo un testo esplicito sopra la riga rossa per renderlo ancora più chiaro
     ax.text(x_pos[-1], 24.3, 'Architectural Limit', color='red', ha='right', va='bottom', fontsize=10, fontweight='bold', zorder=4)

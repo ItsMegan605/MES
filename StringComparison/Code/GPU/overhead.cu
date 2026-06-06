@@ -34,7 +34,7 @@ int main() {
     int base_100KB = 100 * 1024; // I 100 KB base che hai richiesto
     
     // Lista di configurazioni di thread per blocco da testare
-    std::vector<int> threads_array = {32, 64, 128, 192, 256, 384, 512, 768, 1024};
+    std::vector<int> threads_array = {32, 64, 96, 128, 160, 192,224, 256, 288, 384, 512, 768, 1024};
 
     std::cout << "--- ANALISI OVERHEAD HARDWARE ---" << std::endl;
     std::cout << "Dispositivo: " << props.name << std::endl;
