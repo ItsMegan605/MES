@@ -2,7 +2,7 @@
 #define SHARED_H
 
 #define DEBUG 
-//#define BENCHMARK
+#define BENCHMARK
 #define MAX_OCCUPANCY
 
 

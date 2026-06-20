@@ -2,7 +2,7 @@ echo off
 setlocal enabledelayedexpansion
 
 :: Lista dei file da compilare ed eseguire (senza l'estensione .cu)
-set FILES=  StrideLocal16 
+set FILES= StrideLocal16 
 ::StrideCode StrideLocalInt StrideLocalLong 
 for %%f in (%FILES%) do (
     echo ========================================================
