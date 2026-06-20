@@ -10,5 +10,3 @@ Threads,Numero_Blocchi,Max_Smem_Per_Blocco_Bytes,Overhead_Bytes,Overhead_KB
 288,5,19456,5120,5
 384,4,24576,4096,4
 512,3,33024,3328,3.25
-768,2,50176,2048,2
-1024,1,101376,1024,1

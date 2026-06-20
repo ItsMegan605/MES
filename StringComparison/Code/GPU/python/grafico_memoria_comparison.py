@@ -92,13 +92,13 @@ def main():
     fig2, ax2 = plt.subplots(figsize=(11, 6), dpi=300)
     
     ax2.plot(x_pos_memoria, df_memoria['Memoria_Disponibile_KB'], 
-             marker='o', markersize=6, color=line_color, linestyle='-', linewidth=1.5, zorder=3, label='Memoria Disponibile')
+             marker='o', markersize=6, color=line_color, linestyle='-', linewidth=1.5, zorder=3, label='Available Memory')
     
-    ax2.axhline(y=100, color='green', linestyle='--', linewidth=1.5, zorder=2, label='Memoria Base (100 KB)')
+    ax2.axhline(y=100, color='green', linestyle='--', linewidth=1.5, zorder=2, label='Base Memory (100 KB)')
     
-    ax2.set_title('Memoria Condivisa Disponibile al variare della configurazione\n(File: memoria.csv)', fontsize=14, pad=15)
-    ax2.set_xlabel('Configurazione (Thread per Blocco -> Blocchi Max)', fontsize=12, labelpad=10)
-    ax2.set_ylabel('Memoria Disponibile (KB)', fontsize=12)
+    ax2.set_title('Shared Memory available with different configurations', fontsize=14, pad=15)
+    ax2.set_xlabel('Configuration (Thread per block -> Max blocks)', fontsize=12, labelpad=10)
+    ax2.set_ylabel('Available Memory (KB)', fontsize=12)
     
     # Impostiamo il limite superiore dell'asse Y a 130
     ax2.set_ylim(bottom=0, top=110)

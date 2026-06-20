@@ -10,5 +10,4 @@ Threads,Numero_Blocchi,Memoria_Disponibile_Bytes,Memoria_Disponibile_KB
 288,5,97280,95
 384,4,98304,96
 512,3,99072,96.75
-768,2,100352,98
-1024,1,101376,99
+
