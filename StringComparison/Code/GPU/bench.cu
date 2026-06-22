@@ -78,15 +78,14 @@ int main(int argc, char* argv[]) {
     strcpy(output_file + strlen("csv/") + strlen(argv[1]), ".csv");
 
     // 1. Setup Configurazioni del Benchmark
-    std::vector<std::string> strings = {"abracadabra","unevenstring","------------"};
-    std::vector<u64> file_sizes_mb = {2000,4000, 6000,8000};
+    std::vector<std::string> strings = {"unevenstring"};
+    std::vector<u64> file_sizes_mb = {3000,4000, 5000, 6000, 7000,8000};
     
     // Vettore per le configurazioni <thread, shared>
     std::vector<std::pair<u64, u32>> configs = {
         {32, 72}, {64, 72}, {96, 84}, {128, 87}, {160, 90}, 
         {192, 92}, {224, 93}, {256, 93}, {288, 95}
     };
-    
     std::vector<int> nblocks = {1}; // Valori di esempio
 
     

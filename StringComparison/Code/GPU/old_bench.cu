@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
     
     // Nuovi vettori per i cicli annidati completi
     std::vector<u32> shared_mem_limits = {99}; 
-   // std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384};
-    std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288 };
-    std::vector<int> nblocks = {1}; // Valori di esempio
+   // std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288};
+    std::vector<u64> threads = {96 };
+    std::vector<int> nblocks = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}; // Valori di esempio
 
     
     const int runs = 30;
