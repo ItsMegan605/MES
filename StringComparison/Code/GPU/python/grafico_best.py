@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Caricamento del dataset
-df = pd.read_csv('csv/StrideLocal16_results.csv', sep=';')
+df = pd.read_csv('StrideLocal16_results.csv', sep=';')
 
 # Pulizia e conversione della colonna throughput
 df['throughput'] = df['throughput'].str.replace(',', '.').astype(float)
