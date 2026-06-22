@@ -44,7 +44,7 @@ void implementationDependantManagement(){
     int target_blocks = numBlocksPerSm; // debug
     
     //shared_memory_size = props.sharedMemPerMultiprocessor / numBlocksPerSm;
-    shared_memory_size = (sharedMemLimit*1024) / numBlocksPerSm;
+    shared_memory_size = (numBlocksPerSm > 1) ? (sharedMemLimit*1024) / numBlocksPerSm : 48*1024;
     // : FORZA L'ALLINEAMENTO A 16 BYTE (Tronca ai 16 byte inferiori)
     shared_memory_size = shared_memory_size & ~15ULL;
 
