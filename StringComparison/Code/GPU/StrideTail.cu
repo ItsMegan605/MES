@@ -12,9 +12,9 @@
 
 #ifndef VARS
 
-    #define TYPE u64
-    #define EXP 3
-    #define ROUND roundToEight
+    #define TYPE uint4
+    #define EXP 4
+    #define ROUND roundToSixteen
 
 #endif
 //NB: le var con d sono la "copia" dei parametri CPU

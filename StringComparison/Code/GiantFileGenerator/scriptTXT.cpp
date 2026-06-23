@@ -10,7 +10,7 @@ using namespace std;
 int main() {
     // Target size definition: ~4 GB (4000 MB)
     const long long TARGET_SIZE = 4000LL * 1024 * 1024;
-    const string filename = "giant_file.txt";
+    const string filename = "../giant_file.txt";
 
     // Buffer size: 500 MB (writing in large blocks is much faster)
     const int BUFFER_SIZE = 500 * 1024 * 1024;

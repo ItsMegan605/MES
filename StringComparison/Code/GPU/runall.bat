@@ -2,8 +2,8 @@ echo off
 setlocal enabledelayedexpansion
 
 :: Lista dei file da compilare ed eseguire (senza l'estensione .cu)
-set FILES= StrideLocal16 
-::StrideCode StrideLocalInt StrideLocalLong 
+set FILES= StrideTail
+::StrideCode StrideTail 
 for %%f in (%FILES%) do (
     echo ========================================================
     echo [1/2] Compilazione di %%f.cu in corso...

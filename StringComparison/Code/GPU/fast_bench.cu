@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iomanip>
 #include <locale>
+#include <utility> // Aggiunto per std::pair
 
 // Funzioni preesistenti (le assumiamo incluse via shared.cu/h)
 void implementationDependantManagement();
@@ -78,13 +79,14 @@ int main(int argc, char* argv[]) {
 
     // 1. Setup Configurazioni del Benchmark
     std::vector<std::string> strings = {"unevenstring"};
-    std::vector<u64> file_sizes_mb = {4000};
+    std::vector<u64> file_sizes_mb = {3000,4000, 5000, 6000, 7000,8000};
     
-    // Nuovi vettori per i cicli annidati completi
-    std::vector<u32> shared_mem_limits = {99}; 
-   // std::vector<u64> threads = {32, 64, 96, 128, 160, 192, 224, 256, 288};
-    std::vector<u64> threads = {96 };
-    std::vector<int> nblocks = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}; // Valori di esempio
+    // Vettore per le configurazioni <thread, shared>
+    std::vector<std::pair<u64, u32>> configs = {
+        {32, 72}, {64, 72}, {96, 84}, {128, 87}, {160, 90}, 
+        {192, 92}, {224, 93}, {256, 93}, {288, 95}
+    };
+    std::vector<int> nblocks = {1}; // Valori di esempio
 
     
     const int runs = 30;
@@ -97,7 +99,9 @@ int main(int argc, char* argv[]) {
     }
     // Applica la formattazione italiana (virgola per i decimali)
     csv.imbue(std::locale(csv.getloc(), new comma_facet()));
-    csv << "stringa cercata;limite shared mem;thread per blocco;blocchi per SM;ripetizione;dimensione file;throughput\n";
+    
+    // Rimossa la colonna "limite shared mem"
+    csv << "stringa cercata;thread per blocco;blocchi per SM;ripetizione;dimensione file;throughput\n";
 
     // 3. Lettura del file originale da disco (FATTA UNA SOLA VOLTA)
     u64 actual_file_size;
@@ -141,55 +145,51 @@ int main(int argc, char* argv[]) {
             cudaMemcpyToSymbol(d_target_string, target_string, target_string_len);
             cudaMemcpyToSymbol(d_target_string_len, &target_string_len, sizeof(int));
 
-            for(u32 sm_limit : shared_mem_limits) {
-                // Impostazione limite memoria condivisa
-                sharedMemLimit = sm_limit;
+            // Itera sulle configurazioni accoppiate invece di fare il prodotto cartesiano
+            for(const auto& config : configs) {
+                threadsPerBlock = config.first;
+                sharedMemLimit = config.second;
 
-                for(u64 t : threads) {
-                    threadsPerBlock = t;
+                for(int b : nblocks) {
+                    numBlocksPerSm = b;
+            
+                    // Calcola gridDim e shared_memory in base ai nuovi parametri
+                    implementationDependantManagement(); 
                     
-                    for(int b : nblocks) {
-                        numBlocksPerSm = b;
-                
-                        // Calcola gridDim e shared_memory in base ai nuovi parametri
-                        implementationDependantManagement(); 
+                    for(int r = 1; r <= runs; r++) {
                         
-                        for(int r = 1; r <= runs; r++) {
-                            
-                            // Reset delle occorrenze a 0 per la nuova run
-                            cudaMemset((void *)d_occurrences, 0, sizeof(u64));
-                            cudaDeviceSynchronize();
+                        // Reset delle occorrenze a 0 per la nuova run
+                        cudaMemset((void *)d_occurrences, 0, sizeof(u64));
+                        cudaDeviceSynchronize();
 
-                            auto start = std::chrono::steady_clock::now();
-                            
-                            // Lancio del kernel
-                            parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
-                            cudaDeviceSynchronize();
+                        auto start = std::chrono::steady_clock::now();
+                        
+                        // Lancio del kernel
+                        parallelStringSearch<<<blocksPerGrid, threadsPerBlock, shared_memory_size>>>(d_file_buffer, d_occurrences);
+                        cudaDeviceSynchronize();
 
-                            auto end = std::chrono::steady_clock::now();
-                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                        auto end = std::chrono::steady_clock::now();
+                        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-                            // Calcolo Throughput (Bytes per second, convertibile in MB/s a piacimento)
-                            double throughput = ((double)file_size / duration.count()) * 1000.0;
+                        // Calcolo Throughput (Bytes per second, convertibile in MB/s a piacimento)
+                        double throughput = ((double)file_size / duration.count()) * 1000.0;
 
-                            // Salvataggio nel file CSV
-                            csv << str << ";" 
-                                << sharedMemLimit << ";"
-                                << threadsPerBlock << ";" 
-                                << numBlocksPerSm << ";" 
-                                << r << ";" 
-                                << fs_mb << ";" 
-                                << std::fixed << std::setprecision(2) << throughput << "\n";
-                            
-                            // Stampa a schermo
-                            cout << "Completata Run " << r << "/" << runs 
-                                << " | Str: " << str
-                                << " | SM Limit: " << sharedMemLimit
-                                << " | Thr: " << threadsPerBlock 
-                                << " | Blocchi: " << numBlocksPerSm 
-                                << " | Size: " << fs_mb 
-                                << "MB | Throughput: " << throughput << endl;
-                        }
+                        // Salvataggio nel file CSV (omettendo la shared memory)
+                        csv << str << ";" 
+                            << threadsPerBlock << ";" 
+                            << numBlocksPerSm << ";" 
+                            << r << ";" 
+                            << fs_mb << ";" 
+                            << std::fixed << std::setprecision(2) << throughput << "\n";
+                        
+                        // Stampa a schermo
+                        cout << "Completata Run " << r << "/" << runs 
+                            << " | Str: " << str
+                            << " | SM Limit: " << sharedMemLimit
+                            << " | Thr: " << threadsPerBlock 
+                            << " | Blocchi: " << numBlocksPerSm 
+                            << " | Size: " << fs_mb 
+                            << "MB | Throughput: " << throughput << endl;
                     }
                 }
             }
@@ -198,12 +198,12 @@ int main(int argc, char* argv[]) {
 
     // 6. Cleanup finale
     csv.close();
-    delete[] output_file; // Aggiunto per evitare memory leak di output_file
+    delete[] output_file; 
     delete[] file_buffer;
     cudaFree((void*)d_file_buffer);
     cudaFree((void*)d_occurrences);
     if(longest_prefix_suffix_array) delete[] longest_prefix_suffix_array;
     
-    cout << "\nBOOM! Benchmark completato con successo. Risultati salvati in " << argv[1] << ".csv" << endl;
+    cout << "\nBenchmark completato con successo. Risultati salvati in " << argv[1] << ".csv" << endl;
     return 0;
 }

@@ -20,7 +20,7 @@
 #include <cuda_runtime.h>
 
 //genertal constants
-#define FILE_PATH "../CPU/giant_file.txt"
+#define FILE_PATH "../giant_file.txt"
 #define MIN_INPUTS 3 //arg command line
 
 #define MAX_VRAM (u64)8000*1024*1024 // in MByte, max VRAM 8GB

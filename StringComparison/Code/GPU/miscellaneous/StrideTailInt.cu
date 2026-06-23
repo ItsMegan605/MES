@@ -3,4 +3,4 @@
 #define EXP 2
 #define ROUND roundToFour
 
-#include "StrideLocalVar.cu"
+#include "StrideTail.cu"

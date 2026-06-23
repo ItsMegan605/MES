@@ -12,9 +12,9 @@ using namespace std;
  * distributed only within specific intervals (shuffled chunks).
  */
 int main() {
-    // Exact size definition: 4 GB
+    // Exact size definition
     const long long TARGET_SIZE = 8000LL * 1024 * 1024;
-    const string filename = "giant_file.txt";
+    const string filename = "../giant_file.txt";
 
     // Buffer size: 500 MB
     const int BUFFER_SIZE = 500 * 1024 * 1024;
