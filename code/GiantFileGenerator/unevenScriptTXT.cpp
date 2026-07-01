@@ -7,24 +7,17 @@
 
 using namespace std;
 
-/**
- * Script to generate a large text file with a target word ("uneven")
- * distributed only within specific intervals (shuffled chunks).
- */
+
 int main() {
-    // Exact size definition
     const long long TARGET_SIZE = 8000LL * 1024 * 1024;
     const string filename = "../giant_file.txt";
 
-    // Buffer size: 500 MB
     const int BUFFER_SIZE = 500 * 1024 * 1024;
 
-    // --- IRREGULAR DISTRIBUTION PARAMETERS ---
     const int N = 12;            // Total number of intervals/chunks
     const int M = 4;             // Number of intervals that WILL contain the target word
     const string TARGET_WORD = "unevenstring";
 
-    // 1. Dictionary WITHOUT the target word
     vector<string> words_no_target = {
         "before", "been", "only",
         "two", "where", "time", "life", "year", "man", "day", "little", "home",
@@ -46,7 +39,6 @@ int main() {
         "standardization"
     };
 
-    // 2. Dictionary WITH the target word
     vector<string> words_all = words_no_target;
     words_all.push_back(TARGET_WORD);
     words_all.push_back(TARGET_WORD);
@@ -60,12 +52,10 @@ int main() {
     long long INTERVAL_SIZE = TARGET_SIZE / N;
     vector<bool> valid_intervals(N, false);
 
-    // Mark M intervals as "valid" to contain the target word
     for (int i = 0; i < M && i < N; ++i) {
         valid_intervals[i] = true;
     }
 
-    // Randomize which intervals will contain the word
     shuffle(valid_intervals.begin(), valid_intervals.end(), rng);
 
     cout << "Starting generation of " << TARGET_SIZE / (1024 * 1024) << " MB split into " << N << " intervals." << endl;
@@ -99,14 +89,10 @@ int main() {
             if (valid_intervals[current_interval]) {
                 next_word = words_all[dist_all(rng)];
 
-                // --- BOUNDARY PROTECTION BLOCK ---
-                // If we picked the target word, we must ensure it (plus space)
-                // doesn't physically cross into a forbidden interval.
                 if (next_word == TARGET_WORD) {
                     long long end_pos = current_pos + next_word.length() + 1;
                     int next_interval = end_pos / INTERVAL_SIZE;
 
-                    // If the word would overflow into a forbidden interval, replace it
                     if (next_interval < N && !valid_intervals[next_interval]) {
                         next_word = words_no_target[dist_no(rng)];
                     }
@@ -122,9 +108,6 @@ int main() {
             }
         }
 
-        // --- EXACT TRUNCATION ---
-        // If the buffer exceeds the exact target size, resize it.
-        // This ensures the byte alignment matches perfectly during reading/chunking.
         if (bytesWritten + buffer.size() > TARGET_SIZE) {
             buffer.resize(TARGET_SIZE - bytesWritten);
         }

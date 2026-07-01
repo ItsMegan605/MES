@@ -10,7 +10,7 @@
 
 #endif
 
-//NB: le var con d sono la "copia" dei parametri CPU
+//NB: vars with d are the "copy" of the CPU parameters
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences);
 
 void implementationDependantManagement(){
@@ -26,8 +26,8 @@ void implementationDependantManagement(){
     shared_memory_size = threadsPerBlock + target_string_len - 1;
 
     
-    // Chiediamo a CUDA: "Dato il mio threadsPerBlock, quanti blocchi posso 
-    // mettere al massimo in un singolo Streaming Multiprocessor (SM)?"
+    // We ask CUDA: "Given my threadsPerBlock, how many blocks can I 
+    // put at most in a single Streaming Multiprocessor (SM)?"
 
     #ifdef MAX_OCCUPANCY
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(
@@ -38,38 +38,24 @@ void implementationDependantManagement(){
         );  
     #endif
 
-    // Calcoliamo la griglia totale moltiplicando i blocchi per SM per il numero di SM
+    // We calculate the total grid by multiplying the blocks per SM by the number of SMs
     blocksPerGrid = numBlocksPerSm * props.multiProcessorCount;
 
-    // limite della ricerca
+    // search limit
     const u64 workingThreads = file_size - target_string_len + 1;
 
     cudaMemcpyToSymbol(d_totalThreads, &workingThreads, sizeof(u64)); //CHECK
-
-    /*
-    cout << "--- IDENTIKIT HARDWARE DELLA GPU ---" << endl;
-    cout << "Memoria Condivisa Totale per SM: " << props.sharedMemPerMultiprocessor / 1024 << " KB" << endl;
-    cout << "Blocchi per SM: " << numBlocksPerSm << endl;
-    cout << "Memoria Condivisa per Blocco: " << ( props.sharedMemPerMultiprocessor / 1024 ) / numBlocksPerSm<< " KB" << endl;
-    cout << "Memoria Costante Totale: " << props.totalConstMem / 1024 << " KB" << endl;
-    cout << "Memoria Condivisa MAX per singolo Blocco: " << props.sharedMemPerBlock / 1024 << " KB" << endl;
-    cout << "Registri Totali per SM: " << props.regsPerMultiprocessor << endl;
-    cout << "Registri MAX per singolo Blocco: " << props.regsPerBlock << endl;
-    cout << "Numero di SM (Processori): " << props.multiProcessorCount << endl;
-    cout << "------------------------------------" << endl;
-    */
     
 }
 
 
 __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
-    const u64 block_start = (u64)blockDim.x * blockIdx.x; //indice di inziio lavoro 
-    const u64 global_id = threadIdx.x + block_start; //id dei thread
+    const u64 block_start = (u64)blockDim.x * blockIdx.x; // work start index 
+    const u64 global_id = threadIdx.x + block_start; // thread id
 
-    u32 block_pos = threadIdx.x; //id del thread nel blocco
+    u32 block_pos = threadIdx.x; // thread id in the block
 
-    //total thread in exe, tutti i thread esistenti per vedere che alti fanno
     const u64 stride = (u64)blockDim.x * gridDim.x;
     
     u64 my_occurrences = 0;
@@ -87,7 +73,6 @@ __global__ void parallelStringSearch(char* file_buffer, u64* occurrences){
 
     for(u64 k = global_id, blk = block_start; blk < d_totalThreads ; k += stride, blk += stride){
 
-        // gestire caso stringa lunga o blocco piccolo
         prelieviLeft = d_file_size - blk;
         
         thisPrelievi = (numPrelievi < prelieviLeft) ? numPrelievi : prelieviLeft;

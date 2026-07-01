@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
-//genertal constants
+//general constants
 #define FILE_PATH "../giant_file.txt"
 #define MIN_INPUTS 3 //arg command line
 
@@ -60,8 +60,6 @@ int numBlocksPerSm;
 // Max memory limiter for the shared memory in kb
 u32 sharedMemLimit;
 
-// kmp
-int* longest_prefix_suffix_array = nullptr;
 
 // ==================== GPU ===========================
 
@@ -80,15 +78,9 @@ __constant__ u32 d_target_string_len;
 
 __constant__ u64 d_shared_memory_size;
 
-// stride local char e KMP
-__constant__ u64 d_chunk_step; // quanti byte vengono processati da ogni blocco per prelievo
-
-// naive
+// StrideCode
 __constant__ u64  d_totalThreads; 
 
-//KMP
-__constant__ int d_longest_prefix_suffix_array[MAX_TARGET_STR]; 
-__constant__ u64 d_memory_for_thread;
 
 // thread management
 u64 threadsPerBlock;

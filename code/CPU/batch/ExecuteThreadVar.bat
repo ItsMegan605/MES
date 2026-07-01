@@ -44,7 +44,6 @@ if not exist "giant_file.txt" (
     echo.
 )
 
-:: Header: Using semicolon (;) as a separator and "duration" for clarity
 echo thread;iteration;duration > "%OUTPUT_CSV%"
 
 echo Starting benchmark...
@@ -64,7 +63,6 @@ for /L %%T in (%MIN_THREADS%, 1, %MAX_THREADS%) do (
         )
         echo Iteration %%I: Throughput = !THROUGHPUT! ms
 
-        :: Save to CSV using semicolon (;) separator
         echo %%T;%%I;!THROUGHPUT! >> "%OUTPUT_CSV%"
     )
 )
